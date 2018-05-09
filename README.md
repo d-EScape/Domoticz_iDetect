@@ -1,6 +1,6 @@
 # Domoticz_iDetect
 Python plugin for Domoticz: Presence detection from wireless router
-See http://www.domoticz.com for more information on the platform.
+See http://www.domoticz.com for more information on the platform.  
 This plugins forum thread: https://www.domoticz.com/forum/viewtopic.php?f=65&t=20467).
 
 This plugin will use information from your wireless router to detect if devices (phones) are present or absent. I believe this is the most efficient way, since other methods like geo-fencing (gps) or pinging phones might drain their batteries. 
