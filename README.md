@@ -6,7 +6,7 @@ You can configure multiple devices to look for by their MAC addresses. A Domotic
 
 Please let me know if the plugin works for your router by leaving a message in the forum containing your router brand and model. If it doesn't work, then please include a relevant portion of the Domoticz log (after enabling debug mode on the plugin's configuration page).
 
-[attachment=2]devices-idetect021.jpg[/attachment]
+![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/devices-idetect021.jpg)
 
 ## Requirements:
 * Domoticz with python plugin framework enabled (currently only the Domoticz beta)
@@ -17,8 +17,6 @@ step 1: Create a keyfile for the user account (root be default) that runs Domoti
 step 2: Place the public(!) key on the router. Using the asus merlin firmware this can be done in the GUI. This will be different for other routers and might be impossible on many standard firmwares!
 The public and private key files should be in <homedir>/.ssh for the user running Domoticz(!)
    *Alternative option: Enter a password on the plugin hardware configuration page and install sshpass on your (linux) Domoticz machine (sudo apt-get install sshpass).Domoticz will store the password in plain text. This is therefore less secure, but far easier to setup.[/list][/list]
-
-[attachment=1]Presence_v0.2.2.zip[/attachment]
 
 ## Installation:
 * Unzip the zip file in your ~/domoticz/plugins directory. You should now have a ~/domoticz/plugins/Presence directory that contains the plugin.py and two zip files for icons.
@@ -33,7 +31,7 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
   - interval between checks (i use 10 seconds)
   - a grace period after which phones are shown as absent (to deal with temporarily dropped connections).[/list][/list]
 
-[attachment=0]settings021.jpg[/attachment]
+![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
 ### Update 04/05/2018 version 0.2.2
