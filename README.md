@@ -40,16 +40,16 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
 ## History:
 **Update 04/05/2018 version 0.2.3**
 
-Addded: Wider router brand and model support by adding iwinfo command as a method to poll the router for info (next to existing wl and arp methods).
-Some minor optimizations.
+- Addded: Wider router brand and model support by adding iwinfo command as a method to poll the router for info (next to existing wl and arp methods).
+- Some minor optimizations.
 
 **Update 04/05/2018 version 0.2.2**
 
-Adapted the configuration to use Dnpwwo's password field option. The (optional) password will no longer be shown in plain text. 
+- Adapted the configuration to use Dnpwwo's password field option. The (optional) password will no longer be shown in plain text. 
 
 **Update 04/05/2018 version 0.2.1**
 
-Improved error handling and added some sensible logging if certain error occur
+- Improved error handling and added some sensible logging if certain error occur
 
 **Update 02/05/2018 version 0.2.0**
 
@@ -73,7 +73,7 @@ If the plugin keeps throwing errors like "No usable commandline to check presenc
 
 **Update 13/02/2018 version 0.0.2**
 
-Fixed: wl command not found on stock Asus firmware because of missing PATH in ssh session
-Changed: MAC addresses can be configured in upper or lower case. The plugin will convert them to upper case.
-Changed: MAC addresses and corresponding device names may contain leading or trailing spaces. They will be stripped by the plugin. 
-Changed: Different error message in the log for connection failures or data errors. Makes more sense.
+- Fixed: wl command not found on stock Asus firmware because of missing PATH in ssh session
+- Changed: MAC addresses can be configured in upper or lower case. The plugin will convert them to upper case.
+- Changed: MAC addresses and corresponding device names may contain leading or trailing spaces. They will be stripped by the plugin. 
+- Changed: Different error message in the log for connection failures or data errors. Makes more sense.
