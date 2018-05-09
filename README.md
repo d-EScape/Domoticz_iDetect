@@ -36,6 +36,10 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+### Update 04/05/2018 version 0.2.3
+Addded: Wider router brand and model support by adding iwinfo command as a method to poll the router for info (next to existing wl and arp methods).
+Some minor optimizations.
+
 ### Update 04/05/2018 version 0.2.2
 Adapted the configuration to use Dnpwwo's password field option. The (optional) password will no longer be shown in plain text. 
 
