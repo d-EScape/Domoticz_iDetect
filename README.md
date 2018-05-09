@@ -33,22 +33,26 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
   - mac addresses to monitor in the format name=mac addrress separated by a comma eg: phone1=F1:2A:33:44:55:66,phone2=B9:88:77:C6:55:44
   -'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.
   - interval between checks (i use 10 seconds)
-  - a grace period after which phones are shown as absent (to deal with temporarily dropped connections).[/list][/list]
+  - a grace period after which phones are shown as absent (to deal with temporarily dropped connections).
 
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
 **Update 04/05/2018 version 0.2.3**
+
 Addded: Wider router brand and model support by adding iwinfo command as a method to poll the router for info (next to existing wl and arp methods).
 Some minor optimizations.
 
 **Update 04/05/2018 version 0.2.2**
+
 Adapted the configuration to use Dnpwwo's password field option. The (optional) password will no longer be shown in plain text. 
 
 **Update 04/05/2018 version 0.2.1**
+
 Improved error handling and added some sensible logging if certain error occur
 
 **Update 02/05/2018 version 0.2.0**
+
 Some *major changes* in this release:
 - Added password based authentication as an option instead of key based (which is still preferred)
 - Added router capabilities detection instead of assuming wl command is available
@@ -68,6 +72,7 @@ I hope this will make the plugin less dependent on the brand/model router. There
 If the plugin keeps throwing errors like "No usable commandline to check presence. Trying again to detect router capabilities." then check the authentication settings and if the router is reachable. The initialization described above didn't work. If the error message persists you should disable the plugin because it might flood the Domoticz event system with retries. The methods used in this plugin might not be compatible with your router.
 
 **Update 13/02/2018 version 0.0.2**
+
 Fixed: wl command not found on stock Asus firmware because of missing PATH in ssh session
 Changed: MAC addresses can be configured in upper or lower case. The plugin will convert them to upper case.
 Changed: MAC addresses and corresponding device names may contain leading or trailing spaces. They will be stripped by the plugin. 
