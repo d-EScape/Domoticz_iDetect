@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.2.3">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.2.4">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -126,7 +126,7 @@ class BasePlugin:
 					test=$(which iwinfo > /dev/null 2>&1)
 					if [ $? == 0 ]; then
 							printf "iwinfo@"
-							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan')
+							for iface in $(iwinfo | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan')
 							do
 									test=$(iwinfo wlan0 assoclist > /dev/null 2>&1)
 									if [ $? == 0 ]; then
