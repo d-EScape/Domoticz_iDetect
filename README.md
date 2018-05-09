@@ -19,7 +19,9 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
    *Alternative option: Enter a password on the plugin hardware configuration page and install sshpass on your (linux) Domoticz machine (sudo apt-get install sshpass).Domoticz will store the password in plain text. This is therefore less secure, but far easier to setup.[/list][/list]
 
 ## Installation:
-* Unzip the zip file in your ~/domoticz/plugins directory. You should now have a ~/domoticz/plugins/Presence directory that contains the plugin.py and two zip files for icons.
+* > cd ~/domoticz/plugins
+* > git clone https://github.com/d-EScape/Domoticz_iDetect iDetect (or any other target directory you like)
+- You should now have a ~/domoticz/plugins/Presence directory that contains the plugin.py and two zip files for icons.
 * Restart Domoticz
 * Add the plugin in the Domoticz hardware configuration screen
 * Configure the plugin with:
