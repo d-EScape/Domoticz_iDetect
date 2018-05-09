@@ -8,7 +8,7 @@ Please let me know if the plugin works for your router by leaving a message in t
 
 [attachment=2]devices-idetect021.jpg[/attachment]
 
-##Requirements:
+## Requirements:
 * Domoticz with python plugin framework enabled (currently only the Domoticz beta)
 * SSH service enabled on the router and accesible to Domoticz
 * One of the following for ssh authentication to the router
@@ -20,7 +20,7 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
 
 [attachment=1]Presence_v0.2.2.zip[/attachment]
 
-##Installation:
+## Installation:
 * Unzip the zip file in your ~/domoticz/plugins directory. You should now have a ~/domoticz/plugins/Presence directory that contains the plugin.py and two zip files for icons.
 * Restart Domoticz
 * Add the plugin in the Domoticz hardware configuration screen
@@ -35,14 +35,14 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
 
 [attachment=0]settings021.jpg[/attachment]
 
-##History:
-###Update 04/05/2018 version 0.2.2
+## History:
+### Update 04/05/2018 version 0.2.2
 Adapted the configuration to use Dnpwwo's password field option. The (optional) password will no longer be shown in plain text. 
 
-###Update 04/05/2018 version 0.2.1
+### Update 04/05/2018 version 0.2.1
 Improved error handling and added some sensible logging if certain error occur
 
-###Update 02/05/2018 version 0.2.0
+### Update 02/05/2018 version 0.2.0
 Some *major changes* in this release:
 - Added password based authentication as an option instead of key based (which is still preferred)
 - Added router capabilities detection instead of assuming wl command is available
@@ -61,7 +61,7 @@ I hope this will make the plugin less dependent on the brand/model router. There
 
 If the plugin keeps throwing errors like "No usable commandline to check presence. Trying again to detect router capabilities." then check the authentication settings and if the router is reachable. The initialization described above didn't work. If the error message persists you should disable the plugin because it might flood the Domoticz event system with retries. The methods used in this plugin might not be compatible with your router.
 
-###Update 13/02/2018 version 0.0.2
+### Update 13/02/2018 version 0.0.2
 Fixed: wl command not found on stock Asus firmware because of missing PATH in ssh session
 Changed: MAC addresses can be configured in upper or lower case. The plugin will convert them to upper case.
 Changed: MAC addresses and corresponding device names may contain leading or trailing spaces. They will be stripped by the plugin. 
