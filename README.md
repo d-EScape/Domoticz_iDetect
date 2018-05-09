@@ -20,7 +20,7 @@ The public and private key files should be in <homedir>/.ssh for the user runnin
 
 ## Installation:
 * > cd ~/domoticz/plugins
-* > git clone https://github.com/d-EScape/Domoticz_iDetect iDetect (or any other target directory you like)
+* > git clone https://github.com/d-EScape/Domoticz_iDetect iDetect (or any other target directory you like) <
 You should now have a ~/domoticz/plugins/Presence directory that contains the plugin.py and two zip files for icons. In the future you can update the pluging by going into this directory and do a > git pull.
 * Restart Domoticz
 * Add the plugin in the Domoticz hardware configuration screen
