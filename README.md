@@ -30,8 +30,9 @@ Please let me know if the plugin works for your router by leaving a message in t
   - router ip address
   - router username
   - router password (only needed if you don't have key based authentication setup)
-  - mac addresses to monitor in the format name=mac addrress separated by a comma eg: phone1=F1:2A:33:44:55:66,phone2=B9:88:77:C6:55:44
-  -'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.
+  - mac addresses to monitor in the format name=mac addrress, separated by a comma.  
+  eg: phone1=F1:2A:33:44:55:66,phone2=B9:88:77:C6:55:44
+  - 'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.
   - interval between checks (i use 10 seconds)
   - a grace period after which phones are shown as absent (to deal with temporarily dropped connections).
 
