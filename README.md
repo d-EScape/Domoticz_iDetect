@@ -16,9 +16,10 @@ Please let me know if the plugin works for your router by leaving a message in t
 * One of the following for ssh authentication to the router
   * Preferred option: SSH key based authentication between Domoticz and the router. Tricky to setup, but the secure and generally accepted way to authenticate from any program or script. See: http://www.linuxproblem.org/art_9.html for the steps te create a key. In the example A is the Domoticz machine and B the router. Putting the public key on the router will be different (even between routers).
     - step 1: Create a keyfile for the user account (root be default) that runs Domoticz.
-    - step 2: Place the public(!) key on the router. Using the asus merlin firmware this can be done in the GUI. This will be different for other routers and might be impossible on many standard firmwares!  
+    - step 2: Place the public(!) key on the router. Using the asus merlin firmware this can be done in the GUI. This will be different for other routers and might be impossible on many standard firmwares!
+   
 The public and private key files should be in <homedir>/.ssh for the user running Domoticz(!)
-   * Alternative option: Enter a password on the plugin hardware configuration page and install sshpass on your (linux) Domoticz machine (sudo apt-get install sshpass).Domoticz will store the password in plain text. This is therefore less secure, but far easier to setup.[/list][/list]
+   * Alternative option: Enter a password on the plugin hardware configuration page and install sshpass on your (linux) Domoticz machine (sudo apt-get install sshpass).Domoticz will store the password in plain text. This is therefore less secure, but far easier to setup.
 
 ## Installation:
 * > cd ~/domoticz/plugins
