@@ -43,6 +43,7 @@ Please let me know if the plugin works for your router by leaving a message in t
 - It is now possible to change the names of the devices after they have been created
 - Devices are now identified by the DeviceID (friendly name in Domoticz) instead of their display name
 - The names you configure are best kept short, since they are now also DeviceID's in the device list.
+- Changing the name on the hardware configuration page will now result in a new device (and the old one being deleted or shown offline, depending on you setting for deleted devices)
 - __**Beware!**__  
 After installing this version your existing devices will be **deleted** and new ones will be created. If you do not change the configuration the initial names will be the same as before.
 
