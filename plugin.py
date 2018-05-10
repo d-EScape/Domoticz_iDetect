@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.2.4">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.3.0">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -14,7 +14,8 @@
 		</ul>
 		<h3>Behaviour settings</h3>
 		<ul style="list-style-type:square">
-			<li>Enter mac addresses to monitor in the format phone1=F1:2A:33:44:55:66,phone2=B9:88:77:C6:55:44 (and more, separated by comma)</li>
+			<li>Enter mac addresses to monitor in the format phone1=F1:2A:33:44:55:66,phone2=B9:88:77:C6:55:44 (and more, separated by comma).
+			The name should be short and descriptive. It  will be used as the identifying deviceID and the initial device name. You can change the devices name after it has been created.</li>
 			<li>'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.</li>
 			<li>The grace period controls after how long phones are shown as absent (to deal with temporarily dropped connections).</li>
 			<li>The plugin will automatically determine which command to use on the router for which wireless interfaces. This is only tested on a Asus router running asuswrt (ac86u), but should make the plugin compatible with other routers and firmwares.</li>
@@ -76,6 +77,7 @@ class BasePlugin:
 					Domoticz.Debug("Could not detemine the user profile running Domoticz")
 		try:
 			Domoticz.Debug("Fetching data from router using ssh")
+			Domoticz.Debug("command: " + str(cmd))
 			completed=subprocess.run(cmd, stdout=subprocess.PIPE, timeout=alltimeout)
 			Domoticz.Debug("Returncode ssh command: " + str(completed.returncode))
 			Domoticz.Debug("Output from router: " + str(completed.stdout))
@@ -225,7 +227,8 @@ class BasePlugin:
 		self.routerpass = Parameters["Password"]
 		self.individualswitches = True
 		self.deleteobsolete = Parameters["Mode6"] == "True"
-		self.devnametoid={}
+		#self.devnametoid={}
+		self.devid2domid={}
 		self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass)
 
 		#Select or create icons for devices 
@@ -238,7 +241,7 @@ class BasePlugin:
 		
 		#Create "Anyone home" device
 		if 1 not in Devices:
-			Domoticz.Device(Name="Anyone", Unit=1, TypeName="Switch", Used=1, Image=homeiconid).Create()
+			Domoticz.Device(Name="Anyone", DeviceID="#Anyone", Unit=1, TypeName="Switch", Used=1, Image=homeiconid).Create()
 			Domoticz.Log("Device created fot general/Anyone presence")
 		
 		#Find obsolete device units (no longer configured te be monitored)
@@ -248,9 +251,10 @@ class BasePlugin:
 				continue
 			#Check if devices are still in use
 			Domoticz.Debug("monitoring device: " + Devices[dev].Name)
-			if Devices[dev].Name.split(" ")[-1] in self.monitormacs: #prep for use
-				Domoticz.Debug(Devices[dev].Name.split(" ")[-1] + " is stil in use")
-				self.devnametoid.update({Devices[dev].Name.split(" ")[-1]:dev})
+			if Devices[dev].DeviceID in self.monitormacs: #prep for use
+				Domoticz.Debug(Devices[dev].Name + " is stil in use")
+				#self.devnametoid.update({Devices[dev].Name.split(" ")[-1]:dev})
+				self.devid2domid.update({Devices[dev].DeviceID:dev})
 			else: #delete device
 				if dev != 1:
 					if self.deleteobsolete:
@@ -259,30 +263,31 @@ class BasePlugin:
 					else:
 						Devices[dev].Update(nValue=0, sValue="Off", TimedOut=1)
 
-		Domoticz.Debug("devnametoid: " + str(self.devnametoid))
+		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
+		#Domoticz.Debug("devnametoid: " + str(self.devnametoid))
 		Domoticz.Debug("monitormacs: " + str(self.monitormacs))
 
 		for obsolete in deletecandidates:
 			Devices[obsolete].Delete()
 
-		for name in self.monitormacs:
-			#Check if there is a Domoticz device for the configured MAC address
-			if name not in self.devnametoid:
-				Domoticz.Log(name + " not in devnametoid")
+		#Check if there is a Domoticz device for the configured MAC address
+		for friendlyid in self.monitormacs:
+			if friendlyid not in self.devid2domid:
+				Domoticz.Debug(friendlyid + " not in known device list")
 				success=False
-				for num in range(2,11):
+				for num in range(2,200):
 					if num not in Devices:
-						Domoticz.Log("creating name=" + name + " unit=" + str(num)) 
-						Domoticz.Device(Name=name, Unit=num, TypeName="Switch", Used=1, Image=uniticonid).Create()
+						Domoticz.Log("creating device for " + friendlyid + " with unit id " + str(num)) 
+						Domoticz.Device(Name=friendlyid, Unit=num, DeviceID=friendlyid, TypeName="Switch", Used=1, Image=uniticonid).Create()
 						Devices[num].Update(nValue=0, sValue="Off")
-						self.devnametoid.update({Devices[num].Name.split(" ")[-1]:num})
+						self.devid2domid.update({Devices[num].DeviceID:num})
 						success=True
 						break
 				if not success:
-					Domoticz.Error("No numers left to create device for " + name)
+					Domoticz.Error("No numers left to create device for " + friendlyid)
 
 	def onHeartbeat(self):
-		Domoticz.Debug("devnametoid: " + str(self.devnametoid))
+		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
 		if self.routercmdline == "none":
 			#something must have gone wrong while initializing the plugin. Let's try again and skip the detection this time. 
 			Domoticz.Error("No usable commandline to check presence. Trying again to detect router capabilities.")
@@ -294,23 +299,23 @@ class BasePlugin:
 			found = self.activemacs(self.routerip, self.routeruser, self.routerpass, self.routercmdline)
 			if found is not None:
 				someonehome=False
-				for devname, mac in self.monitormacs.items():
+				for friendlyid, mac in self.monitormacs.items():
 					if mac in found:
 						someonehome=True
-						self.updatestatus(self.devnametoid[devname], True)
-						if devname in self.timelastseen:
-							self.timelastseen.pop(devname, None)
+						self.updatestatus(self.devid2domid[friendlyid], True)
+						if friendlyid in self.timelastseen:
+							self.timelastseen.pop(friendlyid, None)
 					else:
-						if devname in self.timelastseen:
-							if not datetime.now() - self.timelastseen[devname] > timedelta(seconds=self.graceoffline):
-								Domoticz.Debug("Check if realy offline: " + str(devname))
+						if friendlyid in self.timelastseen:
+							if not datetime.now() - self.timelastseen[friendlyid] > timedelta(seconds=self.graceoffline):
+								Domoticz.Debug("Check if realy offline: " + str(friendlyid))
 								someonehome=True
 							else:
-								Domoticz.Debug("Considered absent: " + str(devname))
-								self.updatestatus(self.devnametoid[devname], False)
+								Domoticz.Debug("Considered absent: " + str(friendlyid))
+								self.updatestatus(self.devid2domid[friendlyid], False)
 						else:
-							self.timelastseen[devname] = datetime.now()
-							Domoticz.Debug("Seems to have went offline: " + str(devname))
+							self.timelastseen[friendlyid] = datetime.now()
+							Domoticz.Debug("Seems to have went offline: " + str(friendlyid))
 							someonehome=True
 				self.updatestatus(1, someonehome)	 
 			else:
