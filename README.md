@@ -39,6 +39,9 @@ Please let me know if the plugin works for your router by leaving a message in t
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.3.1**
+- Check if ssh and (if needed) sshpass are available on the host OS
+
 **version 0.3.0**
 - It is now possible to change the names of the devices after they have been created
 - Devices are now identified by the DeviceID (friendly name in Domoticz) instead of their display name
