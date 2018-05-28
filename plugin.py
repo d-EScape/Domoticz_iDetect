@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.3.0">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.3.1">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -56,7 +56,7 @@ class BasePlugin:
 		self.graceoffline = 0
 		self.timelastseen = {}
 		self.errorcount = 0
-		return
+		return			
 		
 	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=1):
 		if self.errorcount > 5:
@@ -101,10 +101,10 @@ class BasePlugin:
 				Domoticz.Error("Raw data from router: " + str(completed.stdout))
 			self.errorcount += 1
 			return False, str(completed.returncode)
-		except subprocess.TimeoutExpired:
-			Domoticz.Error("SSH subprocess timed out")
+		except Exception as err:
+			Domoticz.Error("SSH subprocess failed with error: " + str(err))
 			self.errorcount += 1
-			return False, "Subprocess timed out"
+			return False, "Subprocess failed"
 
 	def routercommand(self, host, user, passwd):
 		#The routerscript below will run on the router itself to determine which command and interfaces to use
@@ -150,19 +150,19 @@ class BasePlugin:
 			interfaces = gotinfo[-1].split()
 			Domoticz.Debug("Parsed data from router: " + str(gotinfo))
 			if method=="wl":
-				Domoticz.Log("Using wl command on router (best method) for interfaces " + str(interfaces))
+				Domoticz.Status("Using wl command on router (best method) for interfaces " + str(interfaces))
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"
 				for knownif in interfaces:
 					pollscript=pollscript + ";wl -i " + knownif + " assoclist | cut -d' ' -f2"
 				pollscript=pollscript + ";exit"
 			elif method=="iwinfo":
-				Domoticz.Log("Using iwinfo command on router (best method) for interfaces " + str(interfaces))
+				Domoticz.Status("Using iwinfo command on router (best method) for interfaces " + str(interfaces))
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"
 				for knownif in interfaces:
 					pollscript=pollscript + ";iwinfo " + knownif + " assoclist | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
 				pollscript=pollscript + ";exit"				
 			elif method=="arp":
-				Domoticz.Log("wl command not available on router. Using arp instead (slower response to presence)")
+				Domoticz.Status("wl of iwinfo command not available on router. Using arp instead (slower and less reliable response to absence)")
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH;arp -a | grep '..:..:..:..:..:..' | awk '{print $ 4}';exit"
 			else:
 				Domoticz.Error("Unable to construct router commandline for presence")
@@ -206,8 +206,13 @@ class BasePlugin:
 			self.debug=True
 		else:
 			self.debug=False
-			
-		Domoticz.Debug("Debugging mode enabled")
+					
+		#check some (OS) requirements 
+		oscmdexists("ssh -V")
+		if Parameters["Password"] != "" and oscmdexists("sshpass -V"):
+			self.routerpass = Parameters["Password"]
+		else:
+			self.routerpass = ""
 		
 		#prepare some variables and use the parameters from te settings page
 		maclist={}
@@ -224,10 +229,9 @@ class BasePlugin:
 		self.graceoffline = int(Parameters["Mode3"])
 		self.routerip = Parameters["Address"]
 		self.routeruser = Parameters["Username"]
-		self.routerpass = Parameters["Password"]
+			
 		self.individualswitches = True
 		self.deleteobsolete = Parameters["Mode6"] == "True"
-		#self.devnametoid={}
 		self.devid2domid={}
 		self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass)
 
@@ -253,7 +257,6 @@ class BasePlugin:
 			Domoticz.Debug("monitoring device: " + Devices[dev].Name)
 			if Devices[dev].DeviceID in self.monitormacs: #prep for use
 				Domoticz.Debug(Devices[dev].Name + " is stil in use")
-				#self.devnametoid.update({Devices[dev].Name.split(" ")[-1]:dev})
 				self.devid2domid.update({Devices[dev].DeviceID:dev})
 			else: #delete device
 				if dev != 1:
@@ -264,7 +267,6 @@ class BasePlugin:
 						Devices[dev].Update(nValue=0, sValue="Off", TimedOut=1)
 
 		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
-		#Domoticz.Debug("devnametoid: " + str(self.devnametoid))
 		Domoticz.Debug("monitormacs: " + str(self.monitormacs))
 
 		for obsolete in deletecandidates:
@@ -332,7 +334,20 @@ def onHeartbeat():
 	global _plugin
 	_plugin.onHeartbeat()
 
-	# Generic helper functions
+# Generic helper functions	
+def oscmdexists(cmd):
+	try:
+		result=subprocess.run(cmd.split(), timeout=1)
+		if result.returncode == 0:
+			Domoticz.Debug("Checking if [" + cmd + "] will run: OK")
+			return True
+		else:
+			Domoticz.Error("[" + cmd + "] will run, but raises an error: " + str(result.returncode))
+			return False
+	except Exception as err:
+		Domoticz.Error("[" + cmd + "] will not run but is required! (error: " + str(err) + ")")
+		return False
+
 def DumpConfigToLog():
 	for x in Parameters:
 		if Parameters[x] != "":
