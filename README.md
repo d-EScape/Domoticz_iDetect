@@ -11,7 +11,7 @@ Please let me know if the plugin works for your router by leaving a message in t
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/devices-idetect021.jpg)
 
 ## Requirements:
-(for the moment the plugin will not run on Windows, because of a solvable path issue with ssh and a unknown problem with the polling hearbeat)
+(for the moment the plugin will not run on Windows, because of a solvable path issue with ssh and a unknown problem with the polling heartbeat)
 * Domoticz with python plugin framework enabled (currently only the Domoticz beta)
 * Python3.5 or higher
 * SSH service enabled on the router and accesible to Domoticz
