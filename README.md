@@ -41,6 +41,10 @@ Please let me know if the plugin works for your router by leaving a message in t
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.3.3**
+- Added: fall back to reading /proc/net/arp file if it exists and al other methods are unavailable
+- Fixed: no longer asuming devices are present if the plugin (or domoticz) is restarted
+
 **version 0.3.1**
 - Check if ssh and (if needed) sshpass are available on the host OS
 
