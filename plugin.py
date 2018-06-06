@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.3.1">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.3.3">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -140,7 +140,13 @@ class BasePlugin:
 					test=$(which arp > /dev/null 2>&1)
 					if [ $? == 0 ]; then
 							printf "arp"
-					fi"""	
+							exit
+					fi
+					if [ -f /proc/net/arp ]; then
+						printf "procarp"
+						exit
+					fi
+					printf none"""	
 		
 		Domoticz.Debug("Checking router capabilities and wireless interfaces")
 		success, sshdata=self.getfromssh(host, user, passwd, routerscript, alltimeout=4, sshtimeout=2)
@@ -164,6 +170,9 @@ class BasePlugin:
 			elif method=="arp":
 				Domoticz.Status("wl of iwinfo command not available on router. Using arp instead (slower and less reliable response to absence)")
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH;arp -a | grep '..:..:..:..:..:..' | awk '{print $ 4}';exit"
+			elif method=="procarp":
+				Domoticz.Status("Using last resort method (read info from /proc/net/arp file). This method has a slower and less reliable response to absence)")
+				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH;cat /proc/net/arp | grep '..:..:..:..:..:..' | awk '{print $ 4}';exit"
 			else:
 				Domoticz.Error("Unable to construct router commandline for presence")
 				pollscript = "none"
@@ -300,10 +309,12 @@ class BasePlugin:
 		else:
 			found = self.activemacs(self.routerip, self.routeruser, self.routerpass, self.routercmdline)
 			if found is not None:
-				someonehome=False
+				maccount=len(self.monitormacs)
+				homecount=0
+				gonecount=0
 				for friendlyid, mac in self.monitormacs.items():
 					if mac in found:
-						someonehome=True
+						homecount += 1
 						self.updatestatus(self.devid2domid[friendlyid], True)
 						if friendlyid in self.timelastseen:
 							self.timelastseen.pop(friendlyid, None)
@@ -311,15 +322,21 @@ class BasePlugin:
 						if friendlyid in self.timelastseen:
 							if not datetime.now() - self.timelastseen[friendlyid] > timedelta(seconds=self.graceoffline):
 								Domoticz.Debug("Check if realy offline: " + str(friendlyid))
-								someonehome=True
 							else:
 								Domoticz.Debug("Considered absent: " + str(friendlyid))
 								self.updatestatus(self.devid2domid[friendlyid], False)
+								gonecount += 1
 						else:
 							self.timelastseen[friendlyid] = datetime.now()
 							Domoticz.Debug("Seems to have went offline: " + str(friendlyid))
-							someonehome=True
-				self.updatestatus(1, someonehome)	 
+
+				if self.debug:
+					if (homecount + gonecount) != maccount:
+						Domoticz.Status("Awaiting confirmation on absence of " + str(maccount-(homecount+gonecount)) + " devices")
+				if homecount > 0:
+					self.updatestatus(1, True)
+				elif gonecount == maccount:
+					self.updatestatus(1, False)					 
 			else:
 				Domoticz.Error("No list of connected WLAN devices from router")
 				
