@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.3.3">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.4.0">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -34,6 +34,17 @@
 		</param>
 		<param field="Mode2" label="Interval (sec)" width="75px" required="true" default="10"/>
 		<param field="Mode3" label="Grace period (sec)" width="75px" required="true" default="30"/>
+		<param field="Mode4" label="Override button" width="250px">
+			<options>
+				<option label="Do not allow override" value="No"/>
+				<option label="Override for 1 hour" value="1"/>
+				<option label="Override for 4 hours" value="4"/>
+				<option label="Override for 8 hours" value="8"/>
+				<option label="Override for 24 hours" value="24"/>
+				<option label="Override indefinately" value="Forever"/>
+				<option label="Override until next real presence" value="Next"/>
+			</options>
+		</param>
 		<param field="Mode5" label="Debug mode" width="250px">
 			<options>
 				<option label="Off" value="False" default="True"/>
@@ -64,10 +75,10 @@ class BasePlugin:
 			Domoticz.Heartbeat(30)
 		if passwd:
 			Domoticz.Debug("Using password instead of ssh public key authentication (less secure!)")
-			cmd =["sshpass", "-p", passwd, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
+			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
 		else:
 			Domoticz.Debug("Using ssh public key authentication (~/.ssh/id_rsa.pub) for OS user running domoticz.")
-			cmd =["ssh", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
+			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
 			if self.debug and self.errorcount != 0:
 				try:
 					osuser=subprocess.run("whoami", stdout=subprocess.PIPE, timeout=1)
@@ -128,15 +139,27 @@ class BasePlugin:
 					test=$(which iwinfo > /dev/null 2>&1)
 					if [ $? == 0 ]; then
 							printf "iwinfo@"
-							for iface in $(iwinfo | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan')
+							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan\|^ath')
 							do
-									test=$(iwinfo wlan0 assoclist > /dev/null 2>&1)
+									test=$(iwinfo $iface assoclist > /dev/null 2>&1)
 									if [ $? == 0 ]; then
 											printf "$iface "
 									fi
 							done
 							exit
-					fi					
+					fi
+					test=$(which wlanconfig > /dev/null 2>&1)
+					if [ $? == 0 ]; then
+							printf "wlanconfig@"
+							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan\|^ath')
+							do
+									test=$(wlanconfig $iface list > /dev/null 2>&1)
+									if [ $? == 0 ]; then
+											printf "$iface "
+									fi
+							done
+							exit
+					fi										
 					test=$(which arp > /dev/null 2>&1)
 					if [ $? == 0 ]; then
 							printf "arp"
@@ -166,6 +189,12 @@ class BasePlugin:
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"
 				for knownif in interfaces:
 					pollscript=pollscript + ";iwinfo " + knownif + " assoclist | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
+				pollscript=pollscript + ";exit"
+			elif method=="wlanconfig":
+				Domoticz.Status("Using wlanconfig command on router (best method) for interfaces " + str(interfaces))
+				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"
+				for knownif in interfaces:
+					pollscript=pollscript + ";wlanconfig " + knownif + " list | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
 				pollscript=pollscript + ";exit"				
 			elif method=="arp":
 				Domoticz.Status("wl of iwinfo command not available on router. Using arp instead (slower and less reliable response to absence)")
@@ -216,8 +245,16 @@ class BasePlugin:
 		else:
 			self.debug=False
 					
-		#check some (OS) requirements 
-		oscmdexists("ssh -V")
+		#check some (OS) requirements
+		if onwindows():
+			Domoticz.Debug('Running on Windows')
+			self.sshbin = 'C:\Windows\SysNative\OpenSSH\ssh'
+			Domoticz.Error('The plugin does not work on windows for reasons unknow. Hearbeat code is not executed. If you can offer any help fixing this please let me know on forumthread')
+		else:
+			Domoticz.Debug('Not running on Windows')
+			self.sshbin = 'ssh'
+			
+		oscmdexists(self.sshbin + " -V")
 		if Parameters["Password"] != "" and oscmdexists("sshpass -V"):
 			self.routerpass = Parameters["Password"]
 		else:
@@ -238,7 +275,7 @@ class BasePlugin:
 		self.graceoffline = int(Parameters["Mode3"])
 		self.routerip = Parameters["Address"]
 		self.routeruser = Parameters["Username"]
-			
+
 		self.individualswitches = True
 		self.deleteobsolete = Parameters["Mode6"] == "True"
 		self.devid2domid={}
@@ -247,15 +284,46 @@ class BasePlugin:
 		#Select or create icons for devices 
 		homeicon="idetect-home"
 		uniticon="idetect-unithome"
+		overrideicon="idetect-override"
+		
 		if homeicon not in Images: Domoticz.Image('ihome.zip').Create()
 		homeiconid=Images[homeicon].ID
 		if uniticon not in Images: Domoticz.Image('iunit.zip').Create()
 		uniticonid=Images[uniticon].ID
+		if overrideicon not in Images: Domoticz.Image('ioverride.zip').Create()
+		overrideiconid=Images[overrideicon].ID
 		
 		#Create "Anyone home" device
 		if 1 not in Devices:
 			Domoticz.Device(Name="Anyone", DeviceID="#Anyone", Unit=1, TypeName="Switch", Used=1, Image=homeiconid).Create()
-			Domoticz.Log("Device created fot general/Anyone presence")
+			Domoticz.Log("Device created for general/Anyone presence")
+			
+		#Create "Override" device
+		if 255 not in Devices:
+			Domoticz.Device(Name="Override", DeviceID="#Override", Unit=255, TypeName="Switch", Used=1, Image=overrideiconid).Create()
+			Domoticz.Status("Override switch created to override absence with presence")
+
+		#Set the override options
+		if Parameters["Mode4"] == "No":
+			self.overrideallow=False
+			self.overridefor=None
+			self.overrideuntilnext=False
+		elif Parameters["Mode4"] == "Next":
+			self.overrideallow=True
+			self.overridefor=None
+			self.overrideuntilnext=True
+		elif Parameters["Mode4"] == "Forever":
+			self.overrideallow=True
+			self.overridefor=None
+			self.overrideuntilnext=False
+		else:
+			self.overrideallow=True
+			self.overridefor=int(Parameters["Mode4"])
+			self.overrideuntilnext=False
+		#Get last update timestamp for temporary override in case Domoticz was restarted during the override time
+		if self.overridefor and Devices[255].nValue==1:
+			self.overridestart=timestampfromstring(Devices[255].LastUpdate)
+			Domoticz.Debug("Override start time recovered after restart. Set to " + str(self.overridestart))
 		
 		#Find obsolete device units (no longer configured te be monitored)
 		deletecandidates=[]
@@ -268,7 +336,7 @@ class BasePlugin:
 				Domoticz.Debug(Devices[dev].Name + " is stil in use")
 				self.devid2domid.update({Devices[dev].DeviceID:dev})
 			else: #delete device
-				if dev != 1:
+				if dev != 1 and dev != 255:
 					if self.deleteobsolete:
 						Domoticz.Log("deleting device unit: " + str(dev) + " named: " + Devices[dev].Name)
 						deletecandidates.append(dev)
@@ -281,7 +349,7 @@ class BasePlugin:
 		for obsolete in deletecandidates:
 			Devices[obsolete].Delete()
 
-		#Check if there is a Domoticz device for the configured MAC address
+		#Check if there is a Domoticz device for every configured MAC address
 		for friendlyid in self.monitormacs:
 			if friendlyid not in self.devid2domid:
 				Domoticz.Debug(friendlyid + " not in known device list")
@@ -295,9 +363,15 @@ class BasePlugin:
 						success=True
 						break
 				if not success:
-					Domoticz.Error("No numers left to create device for " + friendlyid)
+					Domoticz.Error("No numbers left to create device for " + friendlyid)
 
 	def onHeartbeat(self):
+		#Reset the override switch if set for a fixed duration that has expired 
+		if Devices[255].nValue==1 and self.overridefor:
+			if datetime.now() - self.overridestart > timedelta(hours=self.overridefor):
+				self.updatestatus(255, False)
+				self.overridestart=None
+		#Start searching for present devices
 		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
 		if self.routercmdline == "none":
 			#something must have gone wrong while initializing the plugin. Let's try again and skip the detection this time. 
@@ -332,13 +406,31 @@ class BasePlugin:
 
 				if self.debug:
 					if (homecount + gonecount) != maccount:
+						Domoticz.Status("Homecount=" + str(homecount) + "; Gonecount=" + str(homecount) + "; Totalmacs=" + str(maccount))
 						Domoticz.Status("Awaiting confirmation on absence of " + str(maccount-(homecount+gonecount)) + " devices")
+				#Set Anyone home device based on MAC detection and Override status
 				if homecount > 0:
+					self.updatestatus(1, True)
+					if self.overrideuntilnext:
+						self.updatestatus(255, False)
+				elif Devices[255].nValue==1:
 					self.updatestatus(1, True)
 				elif gonecount == maccount:
 					self.updatestatus(1, False)					 
 			else:
 				Domoticz.Error("No list of connected WLAN devices from router")
+
+	def onCommand(self, Unit, Command, Level, Hue):
+		#only allow the override switch to be operated and only if overrides are enabled
+		if Unit == 255:
+			if str(Command)=='On' and self.overrideallow:
+				self.updatestatus(Unit, True)
+				if self.overridefor:
+					self.overridestart=datetime.now()
+			if str(Command)=='Off':
+				self.updatestatus(Unit, False)
+				self.overridestart=None
+		return
 				
 global _plugin
 _plugin = BasePlugin()
@@ -350,6 +442,10 @@ def onStart():
 def onHeartbeat():
 	global _plugin
 	_plugin.onHeartbeat()
+	
+def onCommand(Unit, Command, Level, Hue):
+	global _plugin
+	_plugin.onCommand(Unit, Command, Level, Hue)
 
 # Generic helper functions	
 def oscmdexists(cmd):
@@ -364,6 +460,26 @@ def oscmdexists(cmd):
 	except Exception as err:
 		Domoticz.Error("[" + cmd + "] will not run but is required! (error: " + str(err) + ")")
 		return False
+
+#Check if the plugin (and Domoticz) is running on Windows 
+def onwindows():
+	if str(Parameters['HomeFolder'])[1:3] == ":\\":
+		return True
+	else:
+		return False
+
+#Workaround for the buggy datetime.strptime()
+#strptime will only work once and then trow exceptions (seems to be known bug)
+def timestampfromstring(input):
+	#format is "%Y-%m-%d %H:%M:%S"
+	if len(input) == 19:
+		try:
+			thistimestamp=datetime(int(input[:4]),int(input[5:7]),int(input[8:10]),int(input[11:13]),int(input[14:16]),int(input[17:19]))
+			return thistimestamp
+		except:
+			Domoticz.Error("Could not parse datetime string " + input + ". Returning the current instead of time of last update.")
+			return datetime.now()
+			
 
 def DumpConfigToLog():
 	for x in Parameters:
