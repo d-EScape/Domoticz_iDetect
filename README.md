@@ -42,6 +42,7 @@ Please let me know if the plugin works for your router by leaving a message in t
 
 ## History:
 **version 0.4.0**
+**Upgrade note! make sure you also download the new ioverride.zip file. It contains the required icons.**
 - Added: A override switch that let's you force the 'Anyone home' to 'On' even if no phones are detect. You can configure it's behavior: disabled, override for a fixed time, override until the next time a phone is detected or leave it on indefinitely. The latter is also a great way to control the 'Anyone home' status from other scripts in parallel.
 Use case: Broken router, broken phone or any other reason you cannot confirm your presence. If you use the plugin to control alarms or home automation tasks, such situations can be very annoying.
 For security you can mark the Override switch as 'protected' in the Domoticz device properties.
