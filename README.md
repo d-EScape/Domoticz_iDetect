@@ -41,6 +41,11 @@ Please let me know if the plugin works for your router by leaving a message in t
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.4.1**
+- Fixed: Beter handling of poll intervals of over 30 seconds
+- Canged: Configuration of the poll interval is now a pull-down (don't forget to set it when upgradeing)
+- Fixed: Minor improvements on error handling (limit poll frequency after repeated ssh errors)
+
 **version 0.4.0**
 **Upgrade note! make sure you also download the new ioverride.zip file. It contains the required icons.**
 - Added: A override switch that let's you force the 'Anyone home' to 'On' even if no phones are detect. You can configure it's behavior: disabled, override for a fixed time, override until the next time a phone is detected or leave it on indefinitely. The latter is also a great way to control the 'Anyone home' status from other scripts in parallel.
