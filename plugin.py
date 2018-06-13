@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.4.0">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.4.1">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -17,7 +17,7 @@
 			<li>Enter mac addresses to monitor in the format phone1=F1:2A:33:44:55:66,phone2=B9:88:77:C6:55:44 (and more, separated by comma).
 			The name should be short and descriptive. It  will be used as the identifying deviceID and the initial device name. You can change the devices name after it has been created.</li>
 			<li>'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.</li>
-			<li>The grace period controls after how long phones are shown as absent (to deal with temporarily dropped connections).</li>
+			<li>The grace period should be a multitude of the poll interval in seconds. It controls after how long phones are shown as absent (confirmation from several polls to deal with temporarily dropped connections). Example of a working but illogical configuration: if the grace period is 20 seconds, but the poll interval is 30 seconds it might still take up to a minute to confirm absence (2 poll cycles)</li>
 			<li>The plugin will automatically determine which command to use on the router for which wireless interfaces. This is only tested on a Asus router running asuswrt (ac86u), but should make the plugin compatible with other routers and firmwares.</li>
 		</ul>
 	</description>
@@ -28,15 +28,26 @@
 		<param field="Mode1" label="MAC addresses te monitor" width="500px" required="true" default="phone1=A1:B1:01:01:01:01,phone2=C2:D2:02:02:02:02"/>
 		<param field="Mode6" label="Remove obsolete" width="250px">
 			<options>
-				<option label="Delete obsolete devices" value="True"/>
+				<option label="Delete obsolete devices" value="True" default="true"/>
 				<option label="Show obsolete devices as unavailable" value="False"/>
 			</options>
 		</param>
-		<param field="Mode2" label="Interval (sec)" width="75px" required="true" default="10"/>
+		<param field="Mode2" label="Poll every" width="75px" required="true" default="10">
+			<options>
+				<option label="10 seconds" value=10/>
+				<option label="15 seconds" value=15 default="true"/>
+				<option label="30 seconds" value=30/>
+				<option label="60 seconds" value=60/>
+				<option label="2 minutes" value=120/>
+				<option label="5 minutes" value=300/>
+				<option label="10 minutes" value=600/>
+				<option label="30 minutes" value=1800/>
+			</options>
+		</param>
 		<param field="Mode3" label="Grace period (sec)" width="75px" required="true" default="30"/>
 		<param field="Mode4" label="Override button" width="250px">
 			<options>
-				<option label="Do not allow override" value="No"/>
+				<option label="Do not allow override" value="No" default="true"/>
 				<option label="Override for 1 hour" value="1"/>
 				<option label="Override for 4 hours" value="4"/>
 				<option label="Override for 8 hours" value="8"/>
@@ -47,7 +58,7 @@
 		</param>
 		<param field="Mode5" label="Debug mode" width="250px">
 			<options>
-				<option label="Off" value="False" default="True"/>
+				<option label="Off" value="False" default="true"/>
 				<option label="On" value="True"/>
 			</options>
 		</param>
@@ -70,9 +81,10 @@ class BasePlugin:
 		return			
 		
 	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=1):
-		if self.errorcount > 5:
-			Domoticz.Error("Temporarily limiting the polling frequency to twice a minute after encountering more than 5 (ssh) errors in a row.")
-			Domoticz.Heartbeat(30)
+		if self.errorcount == 5:
+			Domoticz.Error("Temporarily limiting the polling frequency after encountering 5 (ssh) errors in a row.")
+			if int(Parameters["Mode2"]) < 120:
+				self.setpollinterval(120, True)
 		if passwd:
 			Domoticz.Debug("Using password instead of ssh public key authentication (less secure!)")
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
@@ -96,7 +108,7 @@ class BasePlugin:
 				if self.errorcount != 0:
 					self.errorcount = 0
 					Domoticz.Error("SSH connection restored. Resuming operation at set poll frequency.")
-					Domoticz.Heartbeat(int(Parameters["Mode2"]))					
+					self.setpollinterval(int(Parameters["Mode2"]))		
 				return True, completed.stdout
 			elif completed.stdout == "":
 				Domoticz.Error("Router returned empty response. Returncode ssh: " + str(completed.returncode))
@@ -220,7 +232,7 @@ class BasePlugin:
 				list.append(item.decode("utf-8").upper())
 			return list
 		else:
-			Domoticz.Error("Failed to poll present phones from router")
+			Domoticz.Debug("Failed to poll present phones from router")
 			return None
 
 	def updatestatus(self, id, onstatus):
@@ -236,6 +248,19 @@ class BasePlugin:
 		if Devices[id].nValue != nvalue or Devices[id].sValue != svalue:
 			Devices[id].Update(nValue=nvalue, sValue=svalue)
 			Domoticz.Debug("Changing device " + Devices[id].Name + " to " + svalue)
+	
+	def setpollinterval(self, target, delayrun=False):		
+		if target > 30:
+			self.skipbeats=target/30
+			if delayrun:
+				self.beats=1
+			else:
+				self.beats=self.skipbeats
+			Domoticz.Heartbeat(30)
+		else:
+			self.skipbeats=0
+			self.beats=1
+			Domoticz.Heartbeat(target)
 			
 	def onStart(self):
 		#setup debugging if enabled in settings
@@ -271,7 +296,7 @@ class BasePlugin:
 				Domoticz.Error("Invalid device/mac setting in: " + str(devmacs))
 		self.monitormacs = maclist
 		Domoticz.Debug("Monitoring " + str(self.monitormacs) + " for presence.")
-		Domoticz.Heartbeat(int(Parameters["Mode2"]))
+		
 		self.graceoffline = int(Parameters["Mode3"])
 		self.routerip = Parameters["Address"]
 		self.routeruser = Parameters["Username"]
@@ -364,8 +389,17 @@ class BasePlugin:
 						break
 				if not success:
 					Domoticz.Error("No numbers left to create device for " + friendlyid)
+		
+		#Finalizing the initialization by setting the heartbeat needed for poll interval
+		self.setpollinterval(int(Parameters["Mode2"]))
 
 	def onHeartbeat(self):
+		#Cancel the rest of this function if this heartbeat needs to be skipped
+		if self.beats < self.skipbeats:
+			Domoticz.Debug("Skipping heartbeat: " + str(self.beats))
+			self.beats += 1
+			return
+		self.beats=1
 		#Reset the override switch if set for a fixed duration that has expired 
 		if Devices[255].nValue==1 and self.overridefor:
 			if datetime.now() - self.overridestart > timedelta(hours=self.overridefor):
@@ -418,13 +452,14 @@ class BasePlugin:
 				elif gonecount == maccount:
 					self.updatestatus(1, False)					 
 			else:
-				Domoticz.Error("No list of connected WLAN devices from router")
+				Domoticz.Debug("No list of connected WLAN devices from router")
 
 	def onCommand(self, Unit, Command, Level, Hue):
 		#only allow the override switch to be operated and only if overrides are enabled
 		if Unit == 255:
 			if str(Command)=='On' and self.overrideallow:
 				self.updatestatus(Unit, True)
+				self.updatestatus(1, True)
 				if self.overridefor:
 					self.overridestart=datetime.now()
 			if str(Command)=='Off':
