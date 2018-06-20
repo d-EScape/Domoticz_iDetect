@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.4.1">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.4.2">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -129,13 +129,15 @@ class BasePlugin:
 			self.errorcount += 1
 			return False, "Subprocess failed"
 
-	def routercommand(self, host, user, passwd):
+	def routercommand(self, host, user, passwd, skipproprietary=True):
 		#The routerscript below will run on the router itself to determine which command and interfaces to use
 		#Preferred method is 'wl' command, but this plugin can use 'arp' as fallback
 		#The constructed command should return a clean list of mac addresses. One address per line in the format xx:xx:xx:xx:xx:xx.
 		#Mac addresses from all known wireless interfaces should be included. Case doesn't matter, we'll take care of that when using the data.
 		routerscript="""#!/bin/sh
-					export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
+					export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"""
+		if not skipproprietary:
+			routerscript=routerscript+"""
 					test=$(which wl > /dev/null 2>&1)
 					if [ $? == 0 ]; then
 							printf "wl@"
@@ -171,7 +173,13 @@ class BasePlugin:
 									fi
 							done
 							exit
-					fi										
+					fi"""
+		routerscript=routerscript+"""
+					test=$(which brctl > /dev/null 2>&1)
+					if [ $? == 0 ]; then
+							printf "brctl"
+							exit
+					fi									
 					test=$(which arp > /dev/null 2>&1)
 					if [ $? == 0 ]; then
 							printf "arp"
@@ -191,25 +199,28 @@ class BasePlugin:
 			interfaces = gotinfo[-1].split()
 			Domoticz.Debug("Parsed data from router: " + str(gotinfo))
 			if method=="wl":
-				Domoticz.Status("Using wl command on router (best method) for interfaces " + str(interfaces))
+				Domoticz.Status("Using chipset specific (wl) command on router for interfaces " + str(interfaces))
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"
 				for knownif in interfaces:
 					pollscript=pollscript + ";wl -i " + knownif + " assoclist | cut -d' ' -f2"
 				pollscript=pollscript + ";exit"
 			elif method=="iwinfo":
-				Domoticz.Status("Using iwinfo command on router (best method) for interfaces " + str(interfaces))
+				Domoticz.Status("Using chipset specific (iwinfo) command on router for interfaces " + str(interfaces))
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"
 				for knownif in interfaces:
 					pollscript=pollscript + ";iwinfo " + knownif + " assoclist | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
 				pollscript=pollscript + ";exit"
 			elif method=="wlanconfig":
-				Domoticz.Status("Using wlanconfig command on router (best method) for interfaces " + str(interfaces))
+				Domoticz.Status("Using chipset specific (wlanconfig) command on router for interfaces " + str(interfaces))
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH"
 				for knownif in interfaces:
 					pollscript=pollscript + ";wlanconfig " + knownif + " list | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
-				pollscript=pollscript + ";exit"				
+				pollscript=pollscript + ";exit"
+			elif method=="brctl":
+				Domoticz.Status("Using generic (brctl) instead of chipset specific command on router (slower response to absence)")
+				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH;brctl showmacs br0 | grep '..:..:..:..:..:..' | awk '{print $ 2}';exit"		
 			elif method=="arp":
-				Domoticz.Status("wl of iwinfo command not available on router. Using arp instead (slower and less reliable response to absence)")
+				Domoticz.Status("Using generic (arp) instead of chipset specific command on router (slower and on some routers less reliable response to absence)")
 				pollscript="export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH;arp -a | grep '..:..:..:..:..:..' | awk '{print $ 4}';exit"
 			elif method=="procarp":
 				Domoticz.Status("Using last resort method (read info from /proc/net/arp file). This method has a slower and less reliable response to absence)")
@@ -285,7 +296,7 @@ class BasePlugin:
 		else:
 			self.routerpass = ""
 		
-		#prepare some variables and use the parameters from te settings page
+		#prepare variables and use the remaining parameters from te settings page
 		maclist={}
 		devmacs=Parameters["Mode1"].replace(" ", "").split(",")
 		for item in devmacs:
@@ -298,13 +309,19 @@ class BasePlugin:
 		Domoticz.Debug("Monitoring " + str(self.monitormacs) + " for presence.")
 		
 		self.graceoffline = int(Parameters["Mode3"])
-		self.routerip = Parameters["Address"]
+		
+		#parse the address parameter for optional power options
+		self.routerip = Parameters["Address"].split("#")[0].strip()
+		self.forcegeneric = False
+		if len(Parameters["Address"].split("#")) > 1:
+			for poweroption in Parameters["Address"].split("#")[1:]:
+				if poweroption.lower().strip() == "forcegeneric":
+					self.forcegeneric = True
+		
 		self.routeruser = Parameters["Username"]
-
-		self.individualswitches = True
 		self.deleteobsolete = Parameters["Mode6"] == "True"
 		self.devid2domid={}
-		self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass)
+		self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass, skipproprietary=self.forcegeneric)
 
 		#Select or create icons for devices 
 		homeicon="idetect-home"
@@ -410,9 +427,7 @@ class BasePlugin:
 		if self.routercmdline == "none":
 			#something must have gone wrong while initializing the plugin. Let's try again and skip the detection this time. 
 			Domoticz.Error("No usable commandline to check presence. Trying again to detect router capabilities.")
-			Domoticz.Error("If you keep getting this message: check your (authentication) settings and router status.")
-			Domoticz.Error("Make sure your router supports ssh and the commands used by this plugin. If this message persists disable the plugin (for now), or the plugin might flood the Domoticz eventsystem")
-			self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass)
+			self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass, skipproprietary=self.forcegeneric)
 			return	
 		else:
 			found = self.activemacs(self.routerip, self.routeruser, self.routerpass, self.routercmdline)
