@@ -47,7 +47,7 @@ The plugin will try several chipset specific tools for monitoring wireless conne
 
 ## History:
 **version 0.4.2**
-- Added: An option to force the plugin to use generic linux commands on the router instead of trying several wifi driver specific tools. Can be used if you also want to monitor ethernet connected devices (not really what the plugin is intende for) or when the wifi tools are somehow not usable on your router make and model.
+- Added: An option to force the plugin to use generic linux commands on the router instead of trying several wifi driver specific tools. Can be used if you also want to monitor ethernet connected devices (not really what the plugin is intended for) or when the wifi tools are somehow not usable on your router make and model.
 
 **version 0.4.1**
 - Fixed: Beter handling of poll intervals of over 30 seconds
