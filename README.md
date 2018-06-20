@@ -41,7 +41,7 @@ Please let me know if the plugin works for your router by leaving a message in t
   
 ## Additional options and technical info
 The plugin will try several chipset specific tools for monitoring wireless connections on your router. These tools are the most reliable and responsive way to tell if a device is connected (present) or not (absent). If no suitable tool can be found on the router the script will fall back on generic Linux commands that monitor the networkbridge or arp table. A but slower to respond when someone leaves the house, but still usable (minutes instead of seconds). If you would like to have a additional tool for a thusfar unsupported chipset added to the plugin then please leave a message on the forum.
-- It is now possible to force the plugin into using generic tools. This is not the preferred way, but can be usefull in some situations. Because the plugin is already using all avaiable settings fields i combined this setting with the address field. If you add '#forcegeneric' behind the address it will skip the detection of chipset specific tools (eg 192.168.0.1#forcegeneric).
+- It is now possible to force the plugin into using generic tools. This is not the preferred way, but can be usefull in some situations. Because the plugin is already using all avaiable settings fields i combined this setting with the 'WiFi Router IP address' field. If you add '#forcegeneric' behind the address it will skip the detection of chipset specific tools (eg 192.168.0.1#forcegeneric).
 
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
