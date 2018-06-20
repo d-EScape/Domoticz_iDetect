@@ -37,10 +37,18 @@ Please let me know if the plugin works for your router by leaving a message in t
   - 'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.
   - interval between checks (i use 10 seconds)
   - a grace period after which phones are shown as absent (to deal with temporarily dropped connections).
+  - you can enable a override button in case you want to automate or manually override the "Anyone home" device. The override butten (when enabled) can be controlled like any other Domoticz device (manual/api). 
+  
+## Additional options and technical info
+The plugin will try several chipset specific tools for monitoring wireless connections on your router. These tools are the most reliable and responsive way to tell if a device is connected (present) or not (absent). If no suitable tool can be found on the router the script will fall back on generic Linux commands that monitor the networkbridge or arp table. A but slower to respond when someone leaves the house, but still usable (minutes instead of seconds). If you would like to have a aditional tool for a thusfar unsupported chipset added to the plugin then please leave a message on the forum.
+- It is now possible to force the plugin into using generic tools. Because the plugin is already using all avaiable settings fields i combined the address field. If you add '#forcegeneric' behind the address it will skip the detection of chipset specific tools (eg 192.168.0.1#forcegeneric).
 
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.4.2**
+- Added: An option to force the plugin to use generic linux commands on the router instead of trying several wifi driver specific tools. Can be used if you also want to monitor ethernet connected devices (not really what the plugin is intende for) or when the wifi tools are somehow not usable on your router make and model.
+
 **version 0.4.1**
 - Fixed: Beter handling of poll intervals of over 30 seconds
 - Canged: Configuration of the poll interval is now a pull-down (don't forget to set it when upgradeing)
