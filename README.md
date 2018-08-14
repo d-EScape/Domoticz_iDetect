@@ -12,9 +12,8 @@ Please let me know if the plugin works for your router by leaving a message in t
 
 ## Requirements:
 (For the moment the plugin will not run on Windows, because of a unknown problem with the polling heartbeat. Help on fixing that will be appreciated!)
-* Domoticz with python plugin framework enabled (currently only the Domoticz beta).
+* Domoticz with python plugin framework enabled.
   Version must be newer than mai 28, 2018.
-* Python3.5 or higher
 * SSH service enabled on the router and accesible to Domoticz
 * One of the following for ssh authentication to the router
   * Preferred option: SSH key based authentication between Domoticz and the router. Tricky to setup, but the secure and generally accepted way to authenticate from any program or script. See: http://www.linuxproblem.org/art_9.html for the steps te create a key. In the example A is the Domoticz machine and B the router. Putting the public key on the router will be different (even between routers).
@@ -47,6 +46,9 @@ The plugin will try several chipset specific tools for monitoring wireless conne
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.4.2**
+- Changed: No longer requires python3.5 (just 3.4 which is already required for the plugin framework in Domoticz)
+
 **version 0.4.2**
 - Added: An option to force the plugin to use generic linux commands on the router instead of trying several wifi driver specific tools. Can be used if you also want to monitor ethernet connected devices (not really what the plugin is intended for) or when the wifi tools are somehow not usable on your router make and model.
 
