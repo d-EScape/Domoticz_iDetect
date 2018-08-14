@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.4.2">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.4.3">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -90,45 +90,30 @@ class BasePlugin:
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
 		else:
 			Domoticz.Debug("Using ssh public key authentication (~/.ssh/id_rsa.pub) for OS user running domoticz.")
-			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
+			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]		
 			if self.debug and self.errorcount != 0:
-				try:
-					osuser=subprocess.run("whoami", stdout=subprocess.PIPE, timeout=1)
-					runasuser = osuser.stdout.decode("utf-8").strip()
+				try:	
+					osuser=subprocess.check_output("whoami", timeout=1)
+					runasuser = osuser.decode("utf-8").strip()
 					Domoticz.Log("The OS user profile running domoticz is:	" + str(runasuser))
-				except:
-					Domoticz.Debug("Could not detemine the user profile running Domoticz")
+				except subprocess.CalledProcessError as err:                                                                                                   
+					Domoticz.Error("Trying to determine OS user raised an error (error: " + str(err.returncode) + "):" + str(err.output))
+		if self.debug:
+			Domoticz.Log("Fetching data from router using: " + str(cmd))
 		try:
-			Domoticz.Debug("Fetching data from router using ssh")
-			Domoticz.Debug("command: " + str(cmd))
-			completed=subprocess.run(cmd, stdout=subprocess.PIPE, timeout=alltimeout)
-			Domoticz.Debug("Returncode ssh command: " + str(completed.returncode))
-			Domoticz.Debug("Output from router: " + str(completed.stdout))
-			if completed.returncode == 0 and completed.stdout != "":
-				if self.errorcount != 0:
-					self.errorcount = 0
-					Domoticz.Error("SSH connection restored. Resuming operation at set poll frequency.")
-					self.setpollinterval(int(Parameters["Mode2"]))		
-				return True, completed.stdout
-			elif completed.stdout == "":
-				Domoticz.Error("Router returned empty response. Returncode ssh: " + str(completed.returncode))
-			elif completed.returncode == 5:
-				Domoticz.Error("Router authentication failed")
-			elif completed.returncode == 127:
-				Domoticz.Error("Router rurned command nog found.")
-				Domoticz.Error("Output from router: " + str(completed.stdout))
-			elif completed.returncode == 130:
-				Domoticz.Error("Router ssh command was interrupted.")
-			else:
-				Domoticz.Error("Router command failed with returncode: " + str(completed.returncode))
-				Domoticz.Error("Raw data from router: " + str(completed.stdout))
+			completed=subprocess.check_output(cmd, timeout=alltimeout)
+			if self.debug:
+				Domoticz.Log("ssh command (router) returned:" + str (completed))
+			if completed == "":
+				Domoticz.Error("Router returned empty response.")
+				self.errorcount += 1
+				return False, "<Empty reponse>"
+		except subprocess.CalledProcessError as err:
+			Domoticz.Error("SSH subprocess failed with error (" + str(err.returncode) + "):" + str(err.output))
 			self.errorcount += 1
-			return False, str(completed.returncode)
-		except Exception as err:
-			Domoticz.Error("SSH subprocess failed with error: " + str(err))
-			self.errorcount += 1
-			return False, "Subprocess failed"
-
+			return False, "<Subprocess failed>"
+		return True, completed
+	
 	def routercommand(self, host, user, passwd, skipproprietary=True):
 		#The routerscript below will run on the router itself to determine which command and interfaces to use
 		#Preferred method is 'wl' command, but this plugin can use 'arp' as fallback
@@ -500,16 +485,12 @@ def onCommand(Unit, Command, Level, Hue):
 # Generic helper functions	
 def oscmdexists(cmd):
 	try:
-		result=subprocess.run(cmd.split(), timeout=1)
-		if result.returncode == 0:
-			Domoticz.Debug("Checking if [" + cmd + "] will run: OK")
-			return True
-		else:
-			Domoticz.Error("[" + cmd + "] will run, but raises an error: " + str(result.returncode))
-			return False
-	except Exception as err:
-		Domoticz.Error("[" + cmd + "] will not run but is required! (error: " + str(err) + ")")
+		result = subprocess.check_output(cmd, timeout=1, shell=True)
+	except subprocess.CalledProcessError as err:                                                                                                   
+		Domoticz.Error("trying [" + cmd + "] raised an error (error: " + str(err.returncode) + "):" + str(err.output))
 		return False
+	Domoticz.Log("Checking if [" + cmd + "] will run: OK")
+	return True                    
 
 #Check if the plugin (and Domoticz) is running on Windows 
 def onwindows():
@@ -528,7 +509,7 @@ def timestampfromstring(input):
 			return thistimestamp
 		except:
 			Domoticz.Error("Could not parse datetime string " + input + ". Returning the current instead of time of last update.")
-			return datetime.now()
+	return datetime.now()
 			
 
 def DumpConfigToLog():
