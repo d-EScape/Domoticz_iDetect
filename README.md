@@ -23,7 +23,7 @@ Please let me know if the plugin works for your router by leaving a message in t
    * Alternative option: Enter a password on the plugin hardware configuration page and install sshpass on your (linux) Domoticz machine (sudo apt-get install sshpass).Domoticz will store the password in plain text. This is therefore less secure, but far easier to setup.
 
 ## Installation:
-* > Always make sure Domoticz is setup to accept new devices/sensors (Domoticz settings). At least when starting the plugin for the first time and when adding new mac addresses to monitor.
+Note: Always make sure Domoticz is setup to accept new devices/sensors (Domoticz settings). At least when starting the plugin for the first time and when adding new mac addresses to monitor.
 * > cd ~/domoticz/plugins
 * > git clone https://github.com/d-EScape/Domoticz_iDetect iDetect (or any other target directory you like)
 * You should now have a ~/domoticz/plugins/iDetect directory that contains the plugin.py and two zip files for icons. In the future you can update the pluging by going into this directory and do a 'git pull'.
