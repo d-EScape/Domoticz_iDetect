@@ -47,6 +47,11 @@ The plugin will try several chipset specific tools for monitoring wireless conne
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.5.0**
+- Added: Support voor routers with more than one wifi chipset (like Asus AC87)
+- Added: Option to force plugin to use arp commands instead of wifi tools
+- Improved: Errorhandling on startup (and more meaningful messages)
+
 **version 0.4.2**
 - Changed: No longer requires python3.5 (just 3.4 which is already required for the plugin framework in Domoticz)
 
