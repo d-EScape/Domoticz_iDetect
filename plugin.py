@@ -3,14 +3,15 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.5.0">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.1">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
 		<ul style="list-style-type:square">
+			<li>You can monitor multiple routers by separating their ip addresses with a comma. If you monitor more than one router the username (and optional password) must be the same on all of them.</li>
 			<li>Leave the password field empty to use ssh public key authentication.</li>
-			<li>SSH key authentication must be configured on the router and on the OS (linux) using ~/.ssh/id_rsa.pub for the user running domoticz.</li>
-			<li>If you enter a password in the password field, then the plugin will use password authentication. Make sure you have installed sshpass (sudo apt-get install sshpass). This is much easier than key authentication, but less secure. Your password wil be stored in the Domoticz database in plain text and is readable on the settings page.</li>
+			<li>SSH key authentication must be configured on every router and on the OS (linux) using ~/.ssh/id_rsa.pub for the user running domoticz.</li>
+			<li>If you enter a password in the password field, then the plugin can use password authentication. Make sure you have installed sshpass (sudo apt-get install sshpass). This is much easier than key authentication, but less secure. Your password wil be stored in the Domoticz database in plain text.</li>
 		</ul>
 		<h3>Behaviour settings</h3>
 		<ul style="list-style-type:square">
@@ -18,7 +19,8 @@
 			The name should be short and descriptive. It  will be used as the identifying deviceID and the initial device name. You can change the devices name after it has been created.</li>
 			<li>'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.</li>
 			<li>The grace period should be a multitude of the poll interval in seconds. It controls after how long phones are shown as absent (confirmation from several polls to deal with temporarily dropped connections). Example of a working but illogical configuration: if the grace period is 20 seconds, but the poll interval is 30 seconds it might still take up to a minute to confirm absence (2 poll cycles)</li>
-			<li>The plugin will automatically determine which command to use on the router for which wireless interfaces. This is only tested on a Asus router running asuswrt (ac86u), but should make the plugin compatible with other routers and firmwares.</li>
+			<li>The override button will let the 'Anyone home' device think there is someone home, even if no presence is detected. This can be helpfull for visitors or to take some control over the 'Anyone home' status from other scripts.</li>
+			<li>The plugin will automatically determine which command to use on the router for which wireless interfaces. If your router (chipset) is not supported you can experiment how to get the right info from the router and post that info on the forum. I might be able to add support to the plugin.</li>
 		</ul>
 	</description>
 	<params>
@@ -81,8 +83,9 @@ class BasePlugin:
 		return
 
 	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=1):
-		if self.errorcount == 5:
+		if self.errorcount == 5 and not self.slowdown:
 			Domoticz.Error("Temporarily limiting the polling frequency after encountering 5 (ssh) errors in a row.")
+			self.slowdown=True
 			if int(Parameters["Mode2"]) < 120:
 				self.setpollinterval(120, True)
 		if passwd:
@@ -112,6 +115,11 @@ class BasePlugin:
 			Domoticz.Error("SSH subprocess failed with error (" + str(err.returncode) + "):" + str(err.output))
 			self.errorcount += 1
 			return False, "<Subprocess failed>"
+		if self.slowdown:
+			Domoticz.Status("Connection restored. Resuming at set poll interval")
+			self.setpollinterval(int(Parameters["Mode2"]))
+			self.slowdown = False
+		self.errorcount = 0
 		return True, completed
 
 	def routercommand(self, host, user, passwd, mode='preferhw'):
@@ -170,7 +178,7 @@ class BasePlugin:
                     if [ $? == 0 ]; then
 							if [ "$hwmethod" == true ]; then
 								printf "#"
-							fi                    
+							fi
                 			printf "qcsapi_sockrpc@"
 							for iface in $(qcsapi_sockrpc get_primary_interface)
 							do
@@ -181,7 +189,7 @@ class BasePlugin:
                             done
                             hwmethod=true
                     fi
-					
+
 					if [ "$hwmethod" == true ] ; then
 						exit
 					fi"""
@@ -205,54 +213,54 @@ class BasePlugin:
 					fi
 					printf none"""
 
-		Domoticz.Debug("Checking router capabilities and wireless interfaces")
+		Domoticz.Debug("Checking router capabilities and wireless interfaces of " + host)
 		success, sshdata=self.getfromssh(host, user, passwd, routerscript, alltimeout=4, sshtimeout=2)
 		if success:
 			capabilities = sshdata.decode("utf-8").split("#")
-			Domoticz.Debug("Capabilities data from router: " + str(capabilities))
+			Domoticz.Debug("Capabilities data from router(" + host + "): " + str(capabilities))
 			pollscript = ""
-			for capability in capabilities:			
+			for capability in capabilities:
 				gotinfo = capability.split("@")
 				method = gotinfo[0]
 				interfaces = gotinfo[-1].split()
-				Domoticz.Debug("Parsed data from router: " + str(gotinfo))
+				Domoticz.Debug("Parsed data from router (" + host + "): " + str(gotinfo))
 				if method=="wl":
-					Domoticz.Status("Using chipset specific (wl) command on router for interfaces " + str(interfaces))
+					Domoticz.Status("Using chipset specific (wl) command on router " + host + " for interfaces " + str(interfaces))
 					for knownif in interfaces:
 						pollscript=pollscript + ";wl -i " + knownif + " assoclist | cut -d' ' -f2"
 				elif method=="iwinfo":
-					Domoticz.Status("Using chipset specific (iwinfo) command on router for interfaces " + str(interfaces))
+					Domoticz.Status("Using chipset specific (iwinfo) command on router " + host + " for interfaces " + str(interfaces))
 					for knownif in interfaces:
 						pollscript=pollscript + ";iwinfo " + knownif + " assoclist | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
 				elif method=="wlanconfig":
-					Domoticz.Status("Using chipset specific (wlanconfig) command on router for interfaces " + str(interfaces))
+					Domoticz.Status("Using chipset specific (wlanconfig) command on router " + host + " for interfaces " + str(interfaces))
 					for knownif in interfaces:
-						pollscript=pollscript + ";wlanconfig " + knownif + " list | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"					
+						pollscript=pollscript + ";wlanconfig " + knownif + " list | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
 				elif method=="qcsapi_sockrpc":
-					Domoticz.Status("Using chipset specific (qcsapi_sockrpc) command on router for interfaces " + str(interfaces))
+					Domoticz.Status("Using chipset specific (qcsapi_sockrpc) command on router " + host + " for interfaces " + str(interfaces))
 					for knownif in interfaces:
 						pollscript=pollscript + ";concount=$(qcsapi_sockrpc get_count_assoc " + knownif + ");i=1;while [[ $i -le $concount ]]; do qcsapi_sockrpc get_station_mac_addr " + knownif + " $i;i=$((i+1));done"				
 				elif method=="brctl":
-					Domoticz.Status("Using generic (brctl) instead of chipset specific command on router (slower response to absence)")
+					Domoticz.Status("Using generic (brctl) instead of chipset specific command on router " + host + " (slower response to absence)")
 					pollscript += ";brctl showmacs br0 | grep '..:..:..:..:..:..' | awk '{print $ 2}'"
 				elif method=="arp":
-					Domoticz.Status("Using generic (arp) instead of chipset specific command on router (slower and on some routers less reliable response to absence)")
+					Domoticz.Status("Using generic (arp) instead of chipset specific command on router " + host + " (slower and on some routers less reliable response to absence)")
 					pollscript += ";arp -a | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
 				elif method=="procarp":
-					Domoticz.Status("Using last resort method (read info from /proc/net/arp file). This method has a slower and less reliable response to absence)")
+					Domoticz.Status("Using last resort method for router " + host + " (read info from /proc/net/arp file). This method has a slower and less reliable response to absence)")
 					pollscript += ";cat /proc/net/arp | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
 				else:
-					Domoticz.Error("Unable to construct router commandline for presence method " + method)
+					Domoticz.Error("Unable to construct router commandline for presence method " + method + "on router " + host)
 			if pollscript != "":
 				pollscript = "export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH" + pollscript
 				pollscript += ";exit"
-				Domoticz.Debug("Constructed this cmd for the router to poll for present phones: " + pollscript)
+				Domoticz.Debug("Constructed this cmd for the router " + host + " to poll for present phones: " + pollscript)
 				return pollscript
 			else:
-				Domoticz.Error("Could not determine router capabilities")
+				Domoticz.Error("Could not determine router capabilities for " + host)
 				return "none"
 		else:
-			Domoticz.Error("Could not retreive router capabilities")
+			Domoticz.Error("Could not retreive router capabilities from " + host)
 			return "none"
 
 	def activemacs(self, host, user, passwd, routerscript):
@@ -262,11 +270,11 @@ class BasePlugin:
 			list=[]
 			for item in sshdata.splitlines():
 				list.append(item.decode("utf-8").upper())
-			return list
+			return True, list
 		else:
 			Domoticz.Debug("Failed to poll present phones from router")
-			return None
-			
+			return False, None
+
 	def createdevice(self, name, unit, friendlyid, iconid):
 		Domoticz.Log("creating device for " + friendlyid + " with unit id " + str(unit)) 
 		Domoticz.Device(Name=name, Unit=unit, DeviceID=friendlyid, TypeName="Switch", Used=1, Image=iconid).Create()
@@ -316,7 +324,8 @@ class BasePlugin:
 
 		self.initcomplete=False
 		self.initfailures=False
-		
+		self.slowdown=False
+
 		#Select or create icons for devices
 		homeicon="idetect-home"
 		uniticon="idetect-unithome"
@@ -345,7 +354,8 @@ class BasePlugin:
 		if not oscmdexists(self.sshbin + " -V"):
 			Domoticz.Error("Aborting plugin initialization because SSH client failure (missing?)")
 			return
-			
+
+		self.routeruser = Parameters["Username"]
 		self.routerpass = Parameters["Password"]
 		if self.routerpass != "":
 			if not oscmdexists("sshpass -V"):
@@ -353,21 +363,32 @@ class BasePlugin:
 				return
 
 		#prepare variables and use the remaining parameters from te settings page
-		maclist={}
+		self.monitormacs={}
+		self.macmonitorcount=0
 		devmacs=Parameters["Mode1"].replace(" ", "").split(",")
 		for item in devmacs:
 			try:
-				name, mac =item.split("=")
-				maclist.update({name.strip():mac.strip().upper()})
+				devpart, option = item.split("#")
+				if option.strip().lower() == "ignore":
+					ignore = True
+				else:
+					ignore = False
+			except:
+				devpart = item
+				ignore = False
+			try:
+				name, mac = devpart.split("=")
+				self.monitormacs.update({name.strip():{'mac': mac.strip().upper(), 'ignore': ignore, 'lastseen':None}})
+				if not ignore:
+					self.macmonitorcount += 1
 			except:
 				Domoticz.Error("Invalid device/mac setting in: " + str(devmacs))
-		self.monitormacs = maclist
 		Domoticz.Debug("Monitoring " + str(self.monitormacs) + " for presence.")
+		Domoticz.Debug(str(self.macmonitorcount) + " of them will control the Anyone home switch")
 
 		self.graceoffline = int(Parameters["Mode3"])
 
 		#parse the address parameter for optional power options
-		self.routerip = Parameters["Address"].split("#")[0].strip()
 		self.detectmode = 'preferhw'
 		if len(Parameters["Address"].split("#")) > 1:
 			for poweroption in Parameters["Address"].split("#")[1:]:
@@ -376,10 +397,19 @@ class BasePlugin:
 				if poweroption.lower().strip() == "forcearp":
 					self.detectmode = 'preferarp'
 
-		self.routeruser = Parameters["Username"]
+		#parse one or multiple router ips from settings
+		#Note: the poweroption, username and password are set globally for all routers!
+		routerips = Parameters["Address"].split("#")[0].strip()
+		self.routercmd = {}
+		for router in routerips.split(','):
+			thisrouter = router.strip()
+			usecmd = self.routercommand(thisrouter, self.routeruser, self.routerpass, mode=self.detectmode)
+			if usecmd != "none":
+				self.routercmd[thisrouter] = usecmd
+
+		Domoticz.Debug("Dictionary of routers and commands: " + str(self.routercmd))
 		self.deleteobsolete = Parameters["Mode6"] == "True"
 		self.devid2domid={}
-		self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass, mode=self.detectmode)
 
 		#Create "Anyone home" device
 		if 1 not in Devices:
@@ -481,39 +511,46 @@ class BasePlugin:
 				self.overridestart=None
 		#Start searching for present devices
 		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
-		if self.routercmdline == "none":
-			#something must have gone wrong while initializing the plugin. Let's try again and skip the detection this time. 
-			Domoticz.Error("No usable commandline to check presence. Trying again to detect router capabilities.")
-			self.routercmdline = self.routercommand(self.routerip, self.routeruser, self.routerpass, mode=self.detectmode)
-			return
+		if len(self.routercmd) < 1:
+ 			#something must have gone wrong while initializing the plugin. 
+ 			Domoticz.Error("No usable commandlines or routers to check presence. Check configuration and routers.")
+ 			return
 		else:
-			found = self.activemacs(self.routerip, self.routeruser, self.routerpass, self.routercmdline)
-			if found is not None:
-				maccount=len(self.monitormacs)
+			found = []
+			success = False
+			for router in self.routercmd:
+				ok, thisrouterdata = self.activemacs(router, self.routeruser, self.routerpass, self.routercmd[router])
+				if ok:
+					found += thisrouterdata
+				success = success or ok
+			if success:
+				Domoticz.Debug("Found these devices connected:" + str(found))
 				homecount=0
 				gonecount=0
-				for friendlyid, mac in self.monitormacs.items():
-					if mac in found:
-						homecount += 1
+				for friendlyid in self.monitormacs:
+					if self.monitormacs[friendlyid]['mac'] in found:
+						if not self.monitormacs[friendlyid]['ignore']:
+							homecount += 1
 						self.updatestatus(self.devid2domid[friendlyid], True)
-						if friendlyid in self.timelastseen:
-							self.timelastseen.pop(friendlyid, None)
+						if self.monitormacs[friendlyid]['lastseen']:
+							self.monitormacs[friendlyid]['lastseen'] = None
 					else:
-						if friendlyid in self.timelastseen:
-							if not datetime.now() - self.timelastseen[friendlyid] > timedelta(seconds=self.graceoffline):
+						if self.monitormacs[friendlyid]['lastseen']:
+							if not datetime.now() - self.monitormacs[friendlyid]['lastseen'] > timedelta(seconds=self.graceoffline):
 								Domoticz.Debug("Check if realy offline: " + str(friendlyid))
 							else:
 								Domoticz.Debug("Considered absent: " + str(friendlyid))
 								self.updatestatus(self.devid2domid[friendlyid], False)
-								gonecount += 1
+								if not self.monitormacs[friendlyid]['ignore']:
+									gonecount += 1
 						else:
-							self.timelastseen[friendlyid] = datetime.now()
+							self.monitormacs[friendlyid]['lastseen'] = datetime.now()
 							Domoticz.Debug("Seems to have went offline: " + str(friendlyid))
 
 				if self.debug:
-					if (homecount + gonecount) != maccount:
-						Domoticz.Status("Homecount=" + str(homecount) + "; Gonecount=" + str(homecount) + "; Totalmacs=" + str(maccount))
-						Domoticz.Status("Awaiting confirmation on absence of " + str(maccount-(homecount+gonecount)) + " devices")
+					if (homecount + gonecount) != self.macmonitorcount:
+						Domoticz.Status("Homecount=" + str(homecount) + "; Gonecount=" + str(gonecount) + "; Totalmacs=" + str(self.macmonitorcount))
+						Domoticz.Status("Awaiting confirmation on absence of " + str(self.macmonitorcount-(homecount+gonecount)) + " devices")
 				#Set Anyone home device based on MAC detection and Override status
 				if homecount > 0:
 					self.updatestatus(1, True)
@@ -521,10 +558,10 @@ class BasePlugin:
 						self.updatestatus(255, False)
 				elif Devices[255].nValue==1:
 					self.updatestatus(1, True)
-				elif gonecount == maccount:
+				elif gonecount == self.macmonitorcount:
 					self.updatestatus(1, False)
 			else:
-				Domoticz.Debug("No list of connected WLAN devices from router")
+				Domoticz.Error("No list of connected WLAN devices from router")
 
 	def onCommand(self, Unit, Command, Level, Hue):
 		#only allow the override switch to be operated and only if overrides are enabled
