@@ -48,6 +48,12 @@ The plugin will try several chipset specific tools for monitoring wireless conne
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.6.2**
+- Added: You can now use different passwords for routers by configuring them as username@routerip (otherwise global username on the configuration page will be used).
+- Added: Displaying the time a ssh command takes when in debug mode.
+- Enhanced: Password is no longer displayed in the debug log.
+- Fixed: Grep command for some openwrt routers. 
+
 **version 0.6.1**
 - Added: Ability to monitor multiple routers (eg in Mesh setup)
 - Added: Option to ignore individual mac addresses from the 'Anyone Home' detection. The device in question will still be monitored individualy.
