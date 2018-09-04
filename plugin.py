@@ -3,12 +3,12 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.1">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.2">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
 		<ul style="list-style-type:square">
-			<li>You can monitor multiple routers by separating their ip addresses with a comma. If you monitor more than one router the username (and optional password) must be the same on all of them.</li>
+			<li>You can monitor multiple routers by separating their ip addresses with a comma. If you monitor more than one router the username for all of them will default to the value entered in password field, or you can specify a router specific username by naming the router username@routerip (eg admin@192.168.1.1)</li>
 			<li>Leave the password field empty to use ssh public key authentication.</li>
 			<li>SSH key authentication must be configured on every router and on the OS (linux) using ~/.ssh/id_rsa.pub for the user running domoticz.</li>
 			<li>If you enter a password in the password field, then the plugin can use password authentication. Make sure you have installed sshpass (sudo apt-get install sshpass). This is much easier than key authentication, but less secure. Your password wil be stored in the Domoticz database in plain text.</li>
@@ -82,7 +82,7 @@ class BasePlugin:
 		self.errorcount = 0
 		return
 
-	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=1):
+	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=2):
 		if self.errorcount == 5 and not self.slowdown:
 			Domoticz.Error("Temporarily limiting the polling frequency after encountering 5 (ssh) errors in a row.")
 			self.slowdown=True
@@ -104,6 +104,7 @@ class BasePlugin:
 		if self.debug:
 			Domoticz.Log("Fetching data from router using: " + str(cmd))
 		try:
+			starttime=datetime.now()
 			completed=subprocess.check_output(cmd, timeout=alltimeout)
 			if self.debug:
 				Domoticz.Log("ssh command (router) returned:" + str (completed))
@@ -115,6 +116,9 @@ class BasePlugin:
 			Domoticz.Error("SSH subprocess failed with error (" + str(err.returncode) + "):" + str(err.output))
 			self.errorcount += 1
 			return False, "<Subprocess failed>"
+		if self.debug:
+			timespend=datetime.now()-starttime
+			Domoticz.Status("SSH command took " + str(timespend.microseconds//1000) + " milliseconds.")
 		if self.slowdown:
 			Domoticz.Status("Connection restored. Resuming at set poll interval")
 			self.setpollinterval(int(Parameters["Mode2"]))
@@ -135,7 +139,7 @@ class BasePlugin:
 					test=$(which wl > /dev/null 2>&1)
 					if [ $? == 0 ]; then
 							printf "wl@"
-							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan')
+							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan')
 							do
 									test=$(wl -i $iface assoclist > /dev/null 2>&1)
 									if [ $? == 0 ]; then
@@ -150,7 +154,7 @@ class BasePlugin:
 								printf "#"
 							fi
 							printf "iwinfo@"
-							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan\|^ath')
+							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath')
 							do
 									test=$(iwinfo $iface assoclist > /dev/null 2>&1)
 									if [ $? == 0 ]; then
@@ -165,7 +169,7 @@ class BasePlugin:
 								printf "#"
 							fi
 							printf "wlanconfig@"
-							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep '^eth\|^wlan\|^ath')
+							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath')
 							do
 									test=$(wlanconfig $iface list > /dev/null 2>&1)
 									if [ $? == 0 ]; then
@@ -400,14 +404,22 @@ class BasePlugin:
 		#parse one or multiple router ips from settings
 		#Note: the poweroption, username and password are set globally for all routers!
 		routerips = Parameters["Address"].split("#")[0].strip()
-		self.routercmd = {}
+		self.routers={}
 		for router in routerips.split(','):
-			thisrouter = router.strip()
-			usecmd = self.routercommand(thisrouter, self.routeruser, self.routerpass, mode=self.detectmode)
+			thisrouter = router.strip()	
+			try:
+				username, hostip = thisrouter.strip().split("@")
+			except:
+				username = self.routeruser
+				hostip = thisrouter
+				
+			usecmd = self.routercommand(hostip, username, self.routerpass, mode=self.detectmode)
 			if usecmd != "none":
-				self.routercmd[thisrouter] = usecmd
+				self.routers[hostip]={'user': username, 'cmd': usecmd}
+		if self.debug:
+			for router in self.routers:
+				Domoticz.Status('Monitoring:' + str(router) + ' - using: ' + self.routers[router]['cmd'])
 
-		Domoticz.Debug("Dictionary of routers and commands: " + str(self.routercmd))
 		self.deleteobsolete = Parameters["Mode6"] == "True"
 		self.devid2domid={}
 
@@ -511,15 +523,15 @@ class BasePlugin:
 				self.overridestart=None
 		#Start searching for present devices
 		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
-		if len(self.routercmd) < 1:
+		if len(self.routers) < 1:
  			#something must have gone wrong while initializing the plugin. 
  			Domoticz.Error("No usable commandlines or routers to check presence. Check configuration and routers.")
  			return
 		else:
 			found = []
 			success = False
-			for router in self.routercmd:
-				ok, thisrouterdata = self.activemacs(router, self.routeruser, self.routerpass, self.routercmd[router])
+			for router in self.routers:
+				ok, thisrouterdata = self.activemacs(router, self.routers[router]['user'], self.routerpass, self.routers[router]['cmd'])
 				if ok:
 					found += thisrouterdata
 				success = success or ok
