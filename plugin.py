@@ -422,9 +422,9 @@ class BasePlugin:
 		routerips = Parameters["Address"].split("#")[0].strip()
 		self.routers={}
 		for router in routerips.split(','):
-			#thisrouter = router.strip()	
+			thisrouter = router.strip()	
 			try:
-				username, hostip = router.strip().split("@")
+				username, hostip = thisrouter.split("@")
 			except:
 				username = self.routeruser
 				hostip = thisrouter
