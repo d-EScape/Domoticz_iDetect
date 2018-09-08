@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.4">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.5">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -79,28 +79,15 @@ class BasePlugin:
 		self.monitormacs = {}
 		self.graceoffline = 0
 		self.timelastseen = {}
-		self.errorcount = 0
 		return
 
 	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=2):
-		if self.errorcount == 5 and not self.slowdown:
-			Domoticz.Error("Temporarily limiting the polling frequency after encountering 5 (ssh) errors in a row.")
-			self.slowdown=True
-			if int(Parameters["Mode2"]) < 120:
-				self.setpollinterval(120, True)
 		if passwd:
 			Domoticz.Debug("Using password instead of ssh public key authentication (less secure!)")
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
 		else:
 			Domoticz.Debug("Using ssh public key authentication (~/.ssh/id_rsa.pub) for OS user running domoticz.")
 			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
-			if self.debug and self.errorcount != 0:
-				try:
-					osuser=subprocess.check_output("whoami", timeout=1)
-					runasuser = osuser.decode("utf-8").strip()
-					Domoticz.Log("The OS user profile running domoticz is:	" + str(runasuser))
-				except subprocess.CalledProcessError as err:
-					Domoticz.Error("Trying to determine OS user raised an error (error: " + str(err.returncode) + "):" + str(err.output))
 		if self.debug:
 			Domoticz.Log("Fetching data from router using: " + str(cmd))
 		starttime=datetime.now()
@@ -108,18 +95,15 @@ class BasePlugin:
 		try:
 			output=subprocess.check_output(cmd, timeout=alltimeout)
 		except subprocess.CalledProcessError as err:
-			Domoticz.Error("SSH subprocess failed with error (" + str(err.returncode) + "):" + str(err.output))
-			self.errorcount += 1
+			Domoticz.Debug("SSH subprocess failed with error (" + str(err.returncode) + "):" + str(err.output))
 			success = False
 			output = "<Subprocess failed>"
 		except subprocess.TimeoutExpired:
-			Domoticz.Error("SSH subprocess timeout")
-			self.errorcount += 1
+			Domoticz.Debug("SSH subprocess timeout")
 			success = False
 			output = "<Timeout>"
 		except Exception as err:
-			Domoticz.Error("Subprocess failed with error: " + err)
-			self.errorcount += 1
+			Domoticz.Debug("Subprocess failed with error: " + err)
 			success = False
 			output = "<Unknown error>"
 		else:
@@ -127,18 +111,11 @@ class BasePlugin:
 				Domoticz.Log("ssh command (router) returned:" + str (output))
 			if output == "":
 				Domoticz.Error("Router returned empty response.")
-				self.errorcount += 1
 				success = False
 				output = "<Empty reponse>"
 		if self.debug:
 			timespend=datetime.now()-starttime
 			Domoticz.Status("SSH command took " + str(timespend.microseconds//1000) + " milliseconds.")
-		if success:
-			self.errorcount = 0
-			if self.slowdown:
-				Domoticz.Status("Connection restored. Resuming at set poll interval")
-				self.setpollinterval(int(Parameters["Mode2"]))
-				self.slowdown = False
 		return success, output
 		
 	def getrouter(self, host, user, passwd, mode='preferhw'):
@@ -274,25 +251,45 @@ class BasePlugin:
 				pollscript = "export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH" + pollscript
 				pollscript += ";exit"
 				Domoticz.Debug("Constructed this cmd for the router " + host + " to poll for present phones: " + pollscript)
-				return {'user': user, 'cmd': pollscript, 'initialized': True}
+				return True, {'user': user, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0}
 			else:
-				Domoticz.Error("Received empty router capabilities for " + host)
-				return {'user': user, 'cmd': '', 'initialized': False}
+				Domoticz.Debug("Received empty router capabilities for " + host)
+				return False, {'user': user, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
 		else:
-			Domoticz.Error("Could not retreive router capabilities from " + host)
-			return {'user': user, 'cmd': '', 'initialized': False}
+			Domoticz.Debug("Could not retreive router capabilities from " + host)
+			return False, {'user': user, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
 
-	def activemacs(self, host, user, passwd, routerscript):
-		Domoticz.Debug("Polling present phones from router")
-		success, sshdata=self.getfromssh(host, user, passwd, routerscript)
-		if success:
-			list=[]
-			for item in sshdata.splitlines():
-				list.append(item.decode("utf-8").upper())
-			return True, list
+	def getactivemacs(self, router):
+		errorcount=self.routers[router]['errorcount']			
+		if self.routers[router]['initialized']:
+			Domoticz.Debug("Polling presense data from " + router)
+			success, sshdata=self.getfromssh(router, self.routers[router]['user'], self.routerpass, self.routers[router]['cmd'])
+			if success:
+				if errorcount > 0:
+					self.routers[router]['errorcount'] = 0
+					Domoticz.Status('Connection restored for ' + router)
+				list=[]
+				for item in sshdata.splitlines():
+					list.append(item.decode("utf-8").upper())
+				return True, list	
 		else:
-			Domoticz.Debug("Failed to poll present phones from router")
-			return False, None
+			Domoticz.Debug(router + " was not properly initialized. Retrying to get router capabilities (and skipping this poll round).")
+			gotit, self.routers[router] = self.getrouter(router, self.routers[router]['user'], self.routerpass, mode=self.detectmode)
+			if gotit:
+				self.routers[router]['errorcount'] = 0
+				return False, None
+		#If anything worked we should have retuned by now
+		self.routers[router]['errorcount'] = errorcount + 1
+		delayme = min(120, self.routers[router]['errorcount'] * 30)
+		self.routers[router]['prospone'] = datetime.now() + timedelta(seconds=delayme)
+		if self.routers[router]['errorcount'] % 3 == 0:
+			if self.routers[router]['initialized']:
+				Domoticz.Error('Polling ' + router + ' has failed ' + str(self.routers[router]['errorcount']) + ' times. Poll interval automatically reduced for this router.')
+			else:
+				Domoticz.Error('Failed ' + str(self.routers[router]['errorcount']) + ' times to get capabilities for ' + router + '. Retry interval automatically reduced for this router.')
+		if self.debug:
+			Domoticz.Status('Routerinfo:' + str(self.routers[router]))
+		return False, None
 
 	def createdevice(self, name, unit, friendlyid, iconid):
 		Domoticz.Log("creating device for " + friendlyid + " with unit id " + str(unit)) 
@@ -370,6 +367,14 @@ class BasePlugin:
 		else:
 			Domoticz.Debug('Not running on Windows')
 			self.sshbin = 'ssh'
+			
+		if self.debug:
+			try:
+				osuser=subprocess.check_output("whoami", timeout=1)
+				runasuser = osuser.decode("utf-8").strip()
+				Domoticz.Log("The OS user profile running domoticz is:	" + str(runasuser))
+			except subprocess.CalledProcessError as err:
+				Domoticz.Error("Trying to determine OS user raised an error (error: " + str(err.returncode) + "):" + str(err.output))
 
 		if not oscmdexists(self.sshbin + " -V"):
 			Domoticz.Error("Aborting plugin initialization because SSH client failure (missing?)")
@@ -429,13 +434,8 @@ class BasePlugin:
 				username = self.routeruser
 				hostip = thisrouter
 				
-			self.routers[hostip] = self.getrouter(hostip, username, self.routerpass, mode=self.detectmode)
-		if self.debug:
-			for router in self.routers:
-				if self.routers[router]['initialized']:
-					Domoticz.Status('Monitoring:' + str(router) + ' - using: ' + self.routers[router]['cmd'])
-				else:
-					Domoticz.Status('NOT monitoring:' + str(router) + ' because it failed to initialize')
+			success, self.routers[hostip] = self.getrouter(hostip, username, self.routerpass, mode=self.detectmode)
+		Domoticz.Debug('Router initialized as:' + str(self.routers))
 
 		self.deleteobsolete = Parameters["Mode6"] == "True"
 		self.devid2domid={}
@@ -547,14 +547,13 @@ class BasePlugin:
 			found = []
 			success = False
 			for router in self.routers:
-				if self.routers[router]['initialized']:
-					ok, thisrouterdata = self.activemacs(router, self.routers[router]['user'], self.routerpass, self.routers[router]['cmd'])
+				if datetime.now() < self.routers[router]['prospone']:
+					Domoticz.Debug('Prosponed connection to ' + router + ' for ' + str(self.routers[router]['prospone']-datetime.now()))
+				else:
+					ok, thisrouterdata = self.getactivemacs(router)
 					if ok:
 						found += thisrouterdata
-					success = success or ok		
-				else:
-					Domoticz.Error(router + " was not properly initialized. Retrying to get router capabilities (and skipping this poll round).")
-					self.routers[router] = self.getrouter(router, self.routers[router]['user'], self.routerpass, mode=self.detectmode)
+					success = success or ok	
 			if success:
 				Domoticz.Debug("Found these devices connected:" + str(found))
 				homecount=0
@@ -592,8 +591,8 @@ class BasePlugin:
 					self.updatestatus(1, True)
 				elif gonecount == self.macmonitorcount:
 					self.updatestatus(1, False)
-			else:
-				Domoticz.Error("Could not get any WLAN information tot monitor")
+			elif self.debug:
+				Domoticz.Status("Did not retreive WLAN information from any router")
 
 	def onCommand(self, Unit, Command, Level, Hue):
 		#only allow the override switch to be operated and only if overrides are enabled
