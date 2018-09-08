@@ -56,7 +56,7 @@ The plugin will try several chipset specific tools for monitoring wireless conne
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
-**version 0.6.4**
+**version 0.6.5**
 - Improved: Lowering poll frequency on errors on a per router basis (one failed router will no longer affect the rest). 
 - Improved: Less logging of non critical errors (one or two ssh failures is no reason to worry .. or log .. since the connection can recover on the next poll.)  
 
