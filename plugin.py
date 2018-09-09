@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.5">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.6">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -83,17 +83,17 @@ class BasePlugin:
 
 	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=2):
 		if passwd:
-			Domoticz.Debug("Using password instead of ssh public key authentication (less secure!)")
+			Domoticz.Log("Using password instead of ssh public key authentication for " + host + " (less secure!)")
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
+			Domoticz.Debug("Fetching data from router using: " + " ".join(cmd[:2]) + " **secret** " + " ".join(cmd[3:]))
 		else:
-			Domoticz.Debug("Using ssh public key authentication (~/.ssh/id_rsa.pub) for OS user running domoticz.")
 			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
-		if self.debug:
-			Domoticz.Log("Fetching data from router using: " + str(cmd))
+			Domoticz.Debug("Fetching data from router using: " + " ".join(cmd))
 		starttime=datetime.now()
 		success = True
 		try:
 			output=subprocess.check_output(cmd, timeout=alltimeout)
+			Domoticz.Debug("ssh command (router) returned:" + str (output))
 		except subprocess.CalledProcessError as err:
 			Domoticz.Debug("SSH subprocess failed with error (" + str(err.returncode) + "):" + str(err.output))
 			success = False
@@ -107,15 +107,12 @@ class BasePlugin:
 			success = False
 			output = "<Unknown error>"
 		else:
-			if self.debug:
-				Domoticz.Log("ssh command (router) returned:" + str (output))
 			if output == "":
 				Domoticz.Error("Router returned empty response.")
 				success = False
 				output = "<Empty reponse>"
-		if self.debug:
-			timespend=datetime.now()-starttime
-			Domoticz.Status("SSH command took " + str(timespend.microseconds//1000) + " milliseconds.")
+		timespend=datetime.now()-starttime
+		Domoticz.Debug("SSH command took " + str(timespend.microseconds//1000) + " milliseconds.")
 		return success, output
 		
 	def getrouter(self, host, user, passwd, mode='preferhw'):
@@ -213,7 +210,6 @@ class BasePlugin:
 		success, sshdata=self.getfromssh(host, user, passwd, routerscript, alltimeout=4, sshtimeout=2)
 		if success:
 			capabilities = sshdata.decode("utf-8").split("#")
-			Domoticz.Debug("Capabilities data from router(" + host + "): " + str(capabilities))
 			pollscript = ""
 			for capability in capabilities:
 				gotinfo = capability.split("@")
@@ -287,8 +283,7 @@ class BasePlugin:
 				Domoticz.Error('Polling ' + router + ' has failed ' + str(self.routers[router]['errorcount']) + ' times. Poll interval automatically reduced for this router.')
 			else:
 				Domoticz.Error('Failed ' + str(self.routers[router]['errorcount']) + ' times to get capabilities for ' + router + '. Retry interval automatically reduced for this router.')
-		if self.debug:
-			Domoticz.Status('Routerinfo:' + str(self.routers[router]))
+		Domoticz.Debug('Routerinfo:' + str(self.routers[router]))
 		return False, None
 
 	def createdevice(self, name, unit, friendlyid, iconid):
@@ -300,7 +295,7 @@ class BasePlugin:
 			Domoticz.Error("Error creating device for " + friendlyid + ". Make sure domoticz is accepting new devices/sensors (in domoticz settings). " + str(err))
 			success=False
 		else:
-			Domoticz.Debug("Created new device named " + str(friendlyid) + " with unitid " + str(unit))
+			Domoticz.Log("Created new device named " + str(friendlyid) + " with unitid " + str(unit))
 			success=True
 		return success
 
@@ -312,11 +307,11 @@ class BasePlugin:
 			svalue = "Off"
 			nvalue = 0
 		if id not in Devices:
-			Domoticz.Log("Device " + str(id) + " does not exist. Restart the plugin to reinitialize devices.")
+			Domoticz.Error("Device " + str(id) + " does not exist. Restart the plugin to reinitialize devices.")
 			return
 		if Devices[id].nValue != nvalue or Devices[id].sValue != svalue:
 			Devices[id].Update(nValue=nvalue, sValue=svalue)
-			Domoticz.Debug("Changing device " + Devices[id].Name + " to " + svalue)
+			Domoticz.Status("Changing presence of " + Devices[id].Name + " to " + svalue)
 
 	def setpollinterval(self, target, delayrun=False):
 		if target > 30:
@@ -334,7 +329,7 @@ class BasePlugin:
 	def onStart(self):
 		#setup debugging if enabled in settings
 		if Parameters["Mode5"]=="True":
-			Domoticz.Debugging(1)
+			Domoticz.Debugging(2)
 			self.debug=True
 		else:
 			self.debug=False
@@ -374,10 +369,10 @@ class BasePlugin:
 				runasuser = osuser.decode("utf-8").strip()
 				Domoticz.Log("The OS user profile running domoticz is:	" + str(runasuser))
 			except subprocess.CalledProcessError as err:
-				Domoticz.Error("Trying to determine OS user raised an error (error: " + str(err.returncode) + "):" + str(err.output))
+				Domoticz.Debug("Trying to determine OS user raised an error (error: " + str(err.returncode) + "):" + str(err.output))
 
 		if not oscmdexists(self.sshbin + " -V"):
-			Domoticz.Error("Aborting plugin initialization because SSH client failure (missing?)")
+			Domoticz.Error("Aborting plugin initialization because SSH client could not be found")
 			return
 
 		self.routeruser = Parameters["Username"]
@@ -443,14 +438,14 @@ class BasePlugin:
 		#Create "Anyone home" device
 		if 1 not in Devices:
 			if self.createdevice(name="Anyone", unit=1, friendlyid="#Anyone", iconid=homeiconid):
-				Domoticz.Status("Device created for general/Anyone presence")
+				Domoticz.Log("Device created for general/Anyone presence")
 			else:
 				self.initfailures=True
 
 		#Create "Override" device
 		if 255 not in Devices:
 			if self.createdevice(name="Override", unit=255, friendlyid="#Override", iconid=overrideiconid):
-				Domoticz.Status("Override switch created to override absence with presence")
+				Domoticz.Log("Override switch created to override absence with presence")
 			else:
 				self.initfailures=True
 
@@ -482,20 +477,20 @@ class BasePlugin:
 			if dev == 1:
 				continue
 			#Check if devices are still in use
-			Domoticz.Debug("monitoring device: " + Devices[dev].Name)
 			if Devices[dev].DeviceID in self.monitormacs: #prep for use
 				Domoticz.Debug(Devices[dev].Name + " is stil in use")
 				self.devid2domid.update({Devices[dev].DeviceID:dev})
 			else: #delete device
 				if dev != 1 and dev != 255:
 					if self.deleteobsolete:
-						Domoticz.Log("deleting device unit: " + str(dev) + " named: " + Devices[dev].Name)
+						Domoticz.Log("Removing device unit: " + str(dev) + " named: " + Devices[dev].Name)
 						deletecandidates.append(dev)
 					else:
+						Domoticz.Log("Device unit: " + str(dev) + " named: " + Devices[dev].Name + " will no longer be monitored.")
 						Devices[dev].Update(nValue=0, sValue="Off", TimedOut=1)
 
-		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
-		Domoticz.Debug("monitormacs: " + str(self.monitormacs))
+		Domoticz.Debug("Devicenames and their Domoticz (subdevice) index: " + str(self.devid2domid))
+		Domoticz.Debug("MAC addresses to monitor: " + str(self.monitormacs))
 
 		for obsolete in deletecandidates:
 			Devices[obsolete].Delete()
@@ -503,7 +498,7 @@ class BasePlugin:
 		#Check if there is a Domoticz device for every configured MAC address
 		for friendlyid in self.monitormacs:
 			if friendlyid not in self.devid2domid:
-				Domoticz.Debug(friendlyid + " not in known device list")
+				Domoticz.Debug(friendlyid + " not in known device list... going to create it.")
 				numavailable=False
 				for num in range(2,200):
 					if num not in Devices:
@@ -538,10 +533,9 @@ class BasePlugin:
 			if datetime.now() - self.overridestart > timedelta(hours=self.overridefor):
 				self.updatestatus(255, False)
 				self.overridestart=None
-		#Start searching for present devices
-		Domoticz.Debug("devid2domid: " + str(self.devid2domid))
+		#Start searching for present devices on all configured routers
 		if len(self.routers) < 1:
- 			Domoticz.Status("There are no routers to monitor. Please check your configuration.")
+ 			Domoticz.Error("There are no routers to monitor. Please check your configuration.")
  			return
 		else:
 			found = []
@@ -578,10 +572,9 @@ class BasePlugin:
 							self.monitormacs[friendlyid]['lastseen'] = datetime.now()
 							Domoticz.Debug("Seems to have went offline: " + str(friendlyid))
 
-				if self.debug:
-					if (homecount + gonecount) != self.macmonitorcount:
-						Domoticz.Status("Homecount=" + str(homecount) + "; Gonecount=" + str(gonecount) + "; Totalmacs=" + str(self.macmonitorcount))
-						Domoticz.Status("Awaiting confirmation on absence of " + str(self.macmonitorcount-(homecount+gonecount)) + " devices")
+				if (homecount + gonecount) != self.macmonitorcount:
+					Domoticz.Debug("Homecount=" + str(homecount) + "; Gonecount=" + str(gonecount) + "; Totalmacs=" + str(self.macmonitorcount))
+					Domoticz.Status("Awaiting confirmation on absence of " + str(self.macmonitorcount-(homecount+gonecount)) + " devices")
 				#Set Anyone home device based on MAC detection and Override status
 				if homecount > 0:
 					self.updatestatus(1, True)
@@ -591,8 +584,8 @@ class BasePlugin:
 					self.updatestatus(1, True)
 				elif gonecount == self.macmonitorcount:
 					self.updatestatus(1, False)
-			elif self.debug:
-				Domoticz.Status("Did not retreive WLAN information from any router")
+			else:
+				Domoticz.Debug("Did not retreive WLAN information from any router")
 
 	def onCommand(self, Unit, Command, Level, Hue):
 		#only allow the override switch to be operated and only if overrides are enabled
@@ -627,7 +620,7 @@ def oscmdexists(cmd):
 	try:
 		result = subprocess.check_output(cmd, timeout=1, shell=True)
 	except subprocess.CalledProcessError as err:
-		Domoticz.Error("trying [" + cmd + "] raised an error (error: " + str(err.returncode) + "):" + str(err.output))
+		Domoticz.Debug("trying [" + cmd + "] raised an error (error: " + str(err.returncode) + "):" + str(err.output))
 		return False
 	Domoticz.Debug("Checking if [" + cmd + "] will run: OK")
 	return True
