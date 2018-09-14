@@ -1,11 +1,9 @@
-iDetect presence plugin tekst op GitHub 
-
 # Domoticz_iDetect
 Python plugin for Domoticz: Presence detection from wireless router  
 See http://www.domoticz.com for more information on the platform.  
 Discussion thread about this plugin: https://www.domoticz.com/forum/viewtopic.php?f=65&t=20467.
 
-This plugin will use information from your wireless router to detect if devices (phones) are present or absent. I believe this is the most efficient way, since other methods like geo-fencing (gps) or pinging phones might drain their batteries. The plugin will determine the chipset of your router automatically, so it it not specific to one particular make and model of router.
+This plugin will use information from your wireless router to detect if wireless devices (phones) are present or absent. I believe this is the most efficient way, since other methods like geo-fencing (gps) or pinging phones might drain their batteries. The plugin will determine the chipset and interfaces of your router automatically, so it is not specific to one particular make and model of router.
 You can configure multiple devices to look for by their MAC addresses. A Domoticz Device will be created for each one. Additionally a single "Anyone home" device will be created, which will be 'On' if any of the monitored devices is present. A override button allows you to temporarily override the presence status, which can be useful if you have visitors or to have another script take (partial) control of the presence status.
 
 Please let me know if the plugin works for your router by leaving a message in the forum containing your router brand and model. If it doesn't work, then please include a relevant portion of the Domoticz log (after enabling debug mode on the plugin's configuration page).
@@ -48,14 +46,32 @@ If the plugin keeps throwing errors like "Could not retreive router capabilities
 - if you are asked for a password then key based authentication is not setup (no problem if you are using password based authentication)    
 
 ## Additional options and technical info
-The plugin will try several chipset specific tools for monitoring wireless connections on your router. These tools are the most reliable and responsive way to tell if a device is connected (present) or not (absent). If no suitable tool can be found on the router the script will fall back on generic Linux commands that monitor the network bridge or arp table. A but slower to respond when someone leaves the house, but still usable (minutes instead of seconds). If you would like to have a additional tool for a thus far unsupported chipset added to the plugin then please leave a message on the forum.
-- It is now possible to force the plugin into using generic tools. This is not the preferred way, but can be useful in some situations. Because the plugin is already using all available settings fields i combined this setting with the 'WiFi Router IP address' field. If you add '#forcegeneric' behind the address(es) it will skip the detection of chipset specific tools (eg 192.168.0.1#forcegeneric).
+The plugin will try several chipset specific tools for monitoring wireless connections on your router. These tools are the most reliable and responsive way to tell if a device is connected (present) or not (absent). If no suitable tool can be found on the router the script will fall back on generic Linux commands that monitor the network bridge or arp table. A but slower to respond when someone leaves the house, but still usable (minutes instead of seconds). It is possible, but not necessary, te preconfigure the script and thereby skipping the automatic detection.
+If you would like to have a additional tool for a thus far unsupported chipset added to the plugin then please leave a message on the forum.
+- You can preconfigure the command(s) to use and the interface(s) to query per router like: 192.168.0.1=wl eth1 eth2&qcsapi_sockrpc eth5. in this example the wl command will be used to query interaces eth1 and eth2. The qcsapi_sockrpc will query eth5. Put an ampersand between two commands for the same router, not between the interface names or routers. You could also configure 192.168.0.1=brctl or 192.168.0.1=arp which would use the generic brctl or arp tool (don’t need interfaces specified).  
+To make finding these commands easy the auto detect script will log them for you. You can just copy the parts from the Domoticz log after running it without reconfiguring any commands.
+A Domoticz log line could look like this:
+> 2018-09-13 22:30:41.751 Status: (iDetect) Using chipset specific wl command on router 192.168.0.1 for interfaces eth5 & eth6 (=wl eth5 eth6)
+You want the part at the end, between parentheses. You can only specify commands that are supported by the plugin. For safety these are not actual shell commands, but identifiers for commands within the plugin. You can use obscure interface names that the plugin does not check for (although it would be better to leave a message on the forum to gat those added to the plugin).  
+By preconfiguring you can reduce the startup time (with can be useful in large wifi infrastructures), deal with a obscure router or exclude certain interfaces from presence detection.  
+This new option makes the #forcegeneric option (described below) kinda redundant, so i will probably remove that in a future version.
+- (Deprecated! but backwards compatible for now) It is possible to force the plugin into using generic tools. This is not the preferred way, but can be useful in some situations. Because the plugin is already using all available settings fields i combined this setting with the 'WiFi Router IP address' field. If you add '#forcegeneric' behind the address(es) it will skip the detection of chipset specific tools (eg 192.168.0.1#forcegeneric). This option should be added at the and of the configuration line and will influence all routers configured (do not add it per router!). It should not be used in a multi router setup anyway (using a generic tool on a router will make absence detection slower and on some routers less reliable).
 - If you need te specify different usernames for different routers, you can do so by adding username@ in front of the routers address, like: admin@192.168.0.1,root@192.168.0.2 (if you are using password based authentication, then the password must be the same on all routers)
 - You can ignore a mac address (mobile device) from the 'Anyone home' detection. Just add #ignore behind the mac address in question. The device will still be monitored individually. Eg: phone1=11:22:33:44:55:66, phone2=33:44:55:66:77:88#ignore will only see anyone home when phone1 is present, but will still monitor both phone1 and phone2.
 
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.7.0**
+- Added: option to preconfigure the router commands (skipping auto detection) and a way to easily find out what to ‘preconfigure’. See github for instructions.
+- Fixed: Router capability detection (compatibility with some firmwares that limit the ssh argument size). 
+**`Important:`**
+Please TEST the new version (watch te log) and leave a message on the forum if it fails where the previous version succeeded. There are changes in this version that i simply cannot test, because i don’t own every brand and model of router. 
+This release introduces a completely rewritten function to detect the router capabilities. Why fix something that doesn’t seem broken? Well, it turns out the original router (shell) part of the script was to long for some routers. In that case the ssh session would fail because the script was longer than the maximum length allowed for an ssh argument. So i used a shorter notation and broke it up into de detection of available commands and the detection of the interfaces to query. The new approach is also a bit easier to maintain (add or modify chipset support).
+Using separate sessions for capabilities detection introduces some additional overhead, but only when the plugin/domoticz starts. It has zero impact on the poll times, since it generates the same poll commands as before. 
+An indication of the changed startup performance: The old detection function would take one session, which took 0.35 seconds on my Asus AC86. It will now take 2 sessions =  0.7 seconds. A router with two chipsets, like the AC87 will take 1+2 sessions = around 1 seconds. A mesh setup with three AC87’s will take 3 + 3x2 sessions, which translates into a little over 3 seconds. With the old function that same mesh setup would take around one second. If timeouts occur the wait time will quickly add up, so i lowered them to two seconds (per ssh session). That should not be a problem if your network, router and Domoticz host are in good shape, but please let me know if it proofs a little to close to the edge.
+Thanks to mvzut for testing and for investigating why the capabilities detection was failing on his router!
+
 **version 0.6.6**
 - Improved: Debug logging for the ssh session now hides the ssh password. 
 - Improved: Presence changes are now logged (without needing debug mode), so you can see something is going on.
