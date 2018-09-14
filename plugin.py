@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.6.6">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.0">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -85,178 +85,192 @@ class BasePlugin:
 		if passwd:
 			Domoticz.Log("Using password instead of ssh public key authentication for " + host + " (less secure!)")
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
-			Domoticz.Debug("Fetching data from router using: " + " ".join(cmd[:2]) + " **secret** " + " ".join(cmd[3:]))
+			Domoticz.Debug("Fetching data from " + host + " using: " + " ".join(cmd[:2]) + " **secret** " + " ".join(cmd[3:]))
 		else:
 			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
-			Domoticz.Debug("Fetching data from router using: " + " ".join(cmd))
+			Domoticz.Debug("Fetching data from " + host + " using: " + " ".join(cmd))
 		starttime=datetime.now()
 		success = True
 		try:
 			output=subprocess.check_output(cmd, timeout=alltimeout)
-			Domoticz.Debug("ssh command (router) returned:" + str (output))
+			Domoticz.Debug("ssh command on " + host + " returned:" + str (output))
 		except subprocess.CalledProcessError as err:
-			Domoticz.Debug("SSH subprocess failed with error (" + str(err.returncode) + "):" + str(err.output))
+			Domoticz.Debug("SSH subprocess for " + host + " failed with error (" + str(err.returncode) + "):" + str(err.output))
 			success = False
 			output = "<Subprocess failed>"
 		except subprocess.TimeoutExpired:
-			Domoticz.Debug("SSH subprocess timeout")
+			Domoticz.Debug("SSH subprocess for " + host + " timeout")
 			success = False
 			output = "<Timeout>"
 		except Exception as err:
-			Domoticz.Debug("Subprocess failed with error: " + err)
+			Domoticz.Debug("Subprocess for " + host + " failed with error: " + err)
 			success = False
 			output = "<Unknown error>"
 		else:
 			if output == "":
-				Domoticz.Error("Router returned empty response.")
+				Domoticz.Error("Router " + host + " returned empty response.")
 				success = False
 				output = "<Empty reponse>"
 		timespend=datetime.now()-starttime
-		Domoticz.Debug("SSH command took " + str(timespend.microseconds//1000) + " milliseconds.")
+		Domoticz.Debug("SSH command on " + host + " took " + str(timespend.microseconds//1000) + " milliseconds.")
 		return success, output
-		
-	def getrouter(self, host, user, passwd, mode='preferhw'):
-		#The routerscript below will run on the router itself to determine which command and interfaces to use
-		#Preferred method is 'wl' command, but this plugin can use 'arp' as fallback
+
+	def getrouter(self, host, user, passwd, mode='preferhw', prefabcmd=""):
+		#The routerscript(s) below will run on the router itself to determine which command and interfaces to use
 		#The constructed command should return a clean list of mac addresses. One address per line in the format xx:xx:xx:xx:xx:xx.
-		#Mac addresses from all known wireless interfaces should be included. Case doesn't matter, we'll take care of that when using the data.
-		routerscript="""#!/bin/sh
-					export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
-					hwmethod=false"""
-		if mode == 'preferhw':
-			routerscript=routerscript+"""
-					test=$(which wl > /dev/null 2>&1)
-					if [ $? == 0 ]; then
-							printf "wl@"
-							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan')
-							do
-									test=$(wl -i $iface assoclist > /dev/null 2>&1)
-									if [ $? == 0 ]; then
-											printf "$iface "
-									fi
-							done
-							hwmethod=true
-					fi
-					test=$(which iwinfo > /dev/null 2>&1)
-					if [ $? == 0 ]; then
-							if [ "$hwmethod" == true ]; then
-								printf "#"
-							fi
-							printf "iwinfo@"
-							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath')
-							do
-									test=$(iwinfo $iface assoclist > /dev/null 2>&1)
-									if [ $? == 0 ]; then
-											printf "$iface "
-									fi
-							done
-							hwmethod=true
-					fi
-					test=$(which wlanconfig > /dev/null 2>&1)
-					if [ $? == 0 ]; then
-							if [ "$hwmethod" == true ]; then
-								printf "#"
-							fi
-							printf "wlanconfig@"
-							for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath')
-							do
-									test=$(wlanconfig $iface list > /dev/null 2>&1)
-									if [ $? == 0 ]; then
-											printf "$iface "
-									fi
-							done
-							hwmethod=true
-					fi
-					test=$(which qcsapi_sockrpc > /dev/null 2>&1)
-                    if [ $? == 0 ]; then
-							if [ "$hwmethod" == true ]; then
-								printf "#"
-							fi
-                			printf "qcsapi_sockrpc@"
-							for iface in $(qcsapi_sockrpc get_primary_interface)
-							do
-									test=$(qcsapi_sockrpc get_assoc_records $iface > /dev/null 2>&1)
-                                	if [ $? == 0 ]; then
-                                            printf "$iface "
-                                    fi
-                            done
-                            hwmethod=true
-                    fi
+	
+		#lists of router methods/chipsets supported by the plugin
+		#wl = broadcom
+		#iwinfo = mac80211
+		#wlanconfig = atheros
+		#qcsapi_sockrpc = quantenna	
+		hwmethods=['wl', 'iwinfo', 'wlanconfig', 'qcsapi_sockrpc']
+		swmethods=['brctl','arp','procarp']
 
-					if [ "$hwmethod" == true ] ; then
-						exit
-					fi"""
+		#gets all available commands from a router
+		methodq="""
+#!/bin/sh
+export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
+type wl > /dev/null 2>&1 && printf "~wl"
+type iwinfo > /dev/null 2>&1 && printf "~iwinfo"
+type wlanconfig > /dev/null 2>&1 && printf "~wlanconfig"
+type qcsapi_sockrpc > /dev/null 2>&1 && printf "~qcsapi_sockrpc"
+type brctl > /dev/null 2>&1 && printf "~brctl"
+type arp > /dev/null 2>&1 && printf "~arp"
+[ -f /proc/net/arp ] && printf "~procarp"
+exit
+"""
+		#find interfaces suitable for a command (chipset)
+		ifq={}
+		ifq['wl']="""
+#!/bin/sh
+export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
+for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan');do
+	wl -i $iface assoclist > /dev/null 2>&1 && printf "~$iface"
+done
+exit
+"""
+		ifq['iwinfo']="""
+#!/bin/sh
+export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
+for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath');do
+	iwinfo $iface assoclist > /dev/null 2>&1 && printf "~$iface"
+done
+exit
+"""
 
-		if mode != 'preferarp':
-			routerscript=routerscript+"""
-					test=$(which brctl > /dev/null 2>&1)
-					if [ $? == 0 ]; then
-							printf "brctl"
-							exit
-					fi"""
-		routerscript=routerscript+"""
-					test=$(which arp > /dev/null 2>&1)
-					if [ $? == 0 ]; then
-							printf "arp"
-							exit
-					fi
-					if [ -f /proc/net/arp ]; then
-						printf "procarp"
-						exit
-					fi
-					printf none"""
+		ifq['wlanconfig']="""
+#!/bin/sh
+export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
+for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath');do
+	wlanconfig $iface list > /dev/null 2>&1 && printf "~$iface"
+done
+exit
+"""
 
-		Domoticz.Debug("Checking router capabilities and wireless interfaces of " + host)
-		success, sshdata=self.getfromssh(host, user, passwd, routerscript, alltimeout=4, sshtimeout=2)
-		if success:
-			capabilities = sshdata.decode("utf-8").split("#")
-			pollscript = ""
-			for capability in capabilities:
-				gotinfo = capability.split("@")
-				method = gotinfo[0]
-				interfaces = gotinfo[-1].split()
-				Domoticz.Debug("Parsed data from router (" + host + "): " + str(gotinfo))
-				if method=="wl":
-					Domoticz.Status("Using chipset specific (wl) command on router " + host + " for interfaces " + str(interfaces))
-					for knownif in interfaces:
-						pollscript=pollscript + ";wl -i " + knownif + " assoclist | cut -d' ' -f2"
-				elif method=="iwinfo":
-					Domoticz.Status("Using chipset specific (iwinfo) command on router " + host + " for interfaces " + str(interfaces))
-					for knownif in interfaces:
-						pollscript=pollscript + ";iwinfo " + knownif + " assoclist | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
-				elif method=="wlanconfig":
-					Domoticz.Status("Using chipset specific (wlanconfig) command on router " + host + " for interfaces " + str(interfaces))
-					for knownif in interfaces:
-						pollscript=pollscript + ";wlanconfig " + knownif + " list | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
-				elif method=="qcsapi_sockrpc":
-					Domoticz.Status("Using chipset specific (qcsapi_sockrpc) command on router " + host + " for interfaces " + str(interfaces))
-					for knownif in interfaces:
-						pollscript=pollscript + ";concount=$(qcsapi_sockrpc get_count_assoc " + knownif + ");i=0;while [[ $i -lt $concount ]]; do qcsapi_sockrpc get_station_mac_addr " + knownif + " $i;i=$((i+1));done"				
-				elif method=="brctl":
-					Domoticz.Status("Using generic (brctl) instead of chipset specific command on router " + host + " (slower response to absence)")
-					pollscript += ";brctl showmacs br0 | grep '..:..:..:..:..:..' | awk '{print $ 2}'"
-				elif method=="arp":
-					Domoticz.Status("Using generic (arp) instead of chipset specific command on router " + host + " (slower and on some routers less reliable response to absence)")
-					pollscript += ";arp -a | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
-				elif method=="procarp":
-					Domoticz.Status("Using last resort method for router " + host + " (read info from /proc/net/arp file). This method has a slower and less reliable response to absence)")
-					pollscript += ";cat /proc/net/arp | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
+		ifq['qcsapi_sockrpc']="""
+#!/bin/sh
+export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
+for iface in $(qcsapi_sockrpc get_primary_interface);do
+	qcsapi_sockrpc get_assoc_records $iface > /dev/null 2>&1 && printf "~$iface"
+done
+exit
+"""
+
+		generic={}
+		generic['brctl']=";brctl showmacs br0 | grep '..:..:..:..:..:..' | awk '{print $ 2}'"
+		generic['arp']=";arp -a | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
+		generic['procarp']=";cat /proc/net/arp | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
+
+		pollscript = ""
+		
+		#the forcegeneric option is replaced by the prefabcmd, but lets keep if for a little while for backwards compatibility 
+		#TO BE REMOVED!!!!
+		if mode=="anygeneric":
+			prefabcmd="brctl"
+		if mode=="preferarp":
+			prefabcmd="arp"
+		
+		foundif = {}
+		#Use preconfigured command/interface combo if available (instead of auto detection)
+		if prefabcmd != "":
+			Domoticz.Debug("Prefab command for " + host + "= >" + prefabcmd)
+			foundmethods=hwmethods + swmethods #assume every cmd is available
+			sources=prefabcmd.strip().split('&')
+			for source in sources:
+				parts=source.strip().split()
+				method=parts[0].strip()
+				if len(parts) > 1:
+					interfaces=parts[1:]
+					foundif[method]=interfaces
 				else:
-					Domoticz.Error("Unable to construct router commandline for presence method " + method + "on router " + host)
-			if pollscript != "":
-				pollscript = "export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH" + pollscript
-				pollscript += ";exit"
-				Domoticz.Debug("Constructed this cmd for the router " + host + " to poll for present phones: " + pollscript)
-				return True, {'user': user, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0}
-			else:
-				Domoticz.Debug("Received empty router capabilities for " + host)
-				return False, {'user': user, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
+					foundif[method]=[]
+			Domoticz.Debug("Forcing command and interfaces for router " + host + ":" + str(foundif))
 		else:
-			Domoticz.Debug("Could not retreive router capabilities from " + host)
+			#automatic detection
+			#find all available commands (hw specific and generic) on router
+			success, sshdata=self.getfromssh(host, user, passwd, methodq, alltimeout=2, sshtimeout=2)
+			if success:
+				foundmethods = sshdata.decode("utf-8")[1:].split("~")
+				Domoticz.Debug("Available commands on " + host + ":" + str(foundmethods))
+			else:
+				Domoticz.Debug("Could not retreive available commands on " + host)
+				return False, {'user': user, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
+
+			#find the wifi interfaces for hw specific commands
+			for method in hwmethods:
+				if method in foundmethods:
+					success, sshdata=self.getfromssh(host, user, passwd, ifq[method], alltimeout=2, sshtimeout=2)
+					if success:
+						interfaces = sshdata.decode("utf-8")[1:].split("~")
+						foundif[method]=interfaces
+					else:
+						Domoticz.Debug("Could not retreive interfaces belonging to " + method + " command on " + host)
+			#need a generic command if nog suitable hw command was found (just 1!)
+			if len(foundif) < 1:
+				for method in swmethods:
+					if method in foundmethods:
+						foundif[method]=[]
+						break
+			Domoticz.Debug("Found suitable command (and interfaces) for router " + host + ":" + str(foundif))
+
+		#construct the hw specific query commands
+		for method in foundif:
+			if len(foundif[method]) < 1 and method in hwmethods:
+				Domoticz.Error("Got no interfaces for " + method + " command on " + host)
+				continue
+			if method=="wl":
+				for knownif in foundif[method]:
+					pollscript=pollscript + ";wl -i " + knownif + " assoclist | cut -d' ' -f2"
+			elif method=="iwinfo":
+				for knownif in foundif[method]:
+					pollscript=pollscript + ";iwinfo " + knownif + " assoclist | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
+			elif method=="wlanconfig":
+				for knownif in foundif[method]:
+					pollscript=pollscript + ";wlanconfig " + knownif + " list | grep '^..:..:..:..:..:.. ' | cut -d' ' -f1"
+			elif method=="qcsapi_sockrpc":
+				for knownif in foundif[method]:
+					pollscript=pollscript + ";concount=$(qcsapi_sockrpc get_count_assoc " + knownif + ");i=0;while [[ $i -lt $concount ]]; do qcsapi_sockrpc get_station_mac_addr " + knownif + " $i;i=$((i+1));done"				
+			elif method in swmethods:
+				if pollscript == "":
+					pollscript = generic[method]
+					Domoticz.Status("Using generic " + method + " command on router " + host + ". Will respond slower and on some routers a little less reliable to absence")
+					break
+			else:
+				Domoticz.Error("Unsupported command (pre)configured for " + host + ": " + method)
+			if method in hwmethods:
+				Domoticz.Status("Using chipset specific " + method + " command on router " + host + " for interfaces " + " & ".join(foundif[method]) + " (=" + method + " " + " ".join(foundif[method]) + ")")
+
+		if pollscript == "":
+			Domoticz.Debug("Could not construct router query command for " + host)
 			return False, {'user': user, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
+		else:
+			pollscript = "export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH" + pollscript + ";exit"
+			Domoticz.Debug("Constructed this cmd for the router " + host + " to poll for present phones: " + pollscript)
+			return True, {'user': user, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0}
 
 	def getactivemacs(self, router):
-		errorcount=self.routers[router]['errorcount']			
+		errorcount=self.routers[router]['errorcount']
 		if self.routers[router]['initialized']:
 			Domoticz.Debug("Polling presense data from " + router)
 			success, sshdata=self.getfromssh(router, self.routers[router]['user'], self.routerpass, self.routers[router]['cmd'])
@@ -267,7 +281,7 @@ class BasePlugin:
 				list=[]
 				for item in sshdata.splitlines():
 					list.append(item.decode("utf-8").upper())
-				return True, list	
+				return True, list
 		else:
 			Domoticz.Debug(router + " was not properly initialized. Retrying to get router capabilities (and skipping this poll round).")
 			gotit, self.routers[router] = self.getrouter(router, self.routers[router]['user'], self.routerpass, mode=self.detectmode)
@@ -287,7 +301,7 @@ class BasePlugin:
 		return False, None
 
 	def createdevice(self, name, unit, friendlyid, iconid):
-		Domoticz.Log("creating device for " + friendlyid + " with unit id " + str(unit)) 
+		Domoticz.Log("creating device for " + friendlyid + " with unit id " + str(unit))
 		Domoticz.Device(Name=name, Unit=unit, DeviceID=friendlyid, TypeName="Switch", Used=1, Image=iconid).Create()
 		try:
 			Devices[unit].Update(nValue=0, sValue="Off")
@@ -325,7 +339,7 @@ class BasePlugin:
 			self.skipbeats=0
 			self.beats=1
 			Domoticz.Heartbeat(target)
-			
+
 	def onStart(self):
 		#setup debugging if enabled in settings
 		if Parameters["Mode5"]=="True":
@@ -362,7 +376,7 @@ class BasePlugin:
 		else:
 			Domoticz.Debug('Not running on Windows')
 			self.sshbin = 'ssh'
-			
+
 		if self.debug:
 			try:
 				osuser=subprocess.check_output("whoami", timeout=1)
@@ -413,23 +427,32 @@ class BasePlugin:
 		if len(Parameters["Address"].split("#")) > 1:
 			for poweroption in Parameters["Address"].split("#")[1:]:
 				if poweroption.lower().strip() == "forcegeneric":
+					#Domoticz.Error("The #forcegeneric option has been replaced!! See instructions on GitHub")
 					self.detectmode = 'anygeneric'
 				if poweroption.lower().strip() == "forcearp":
+					#Domoticz.Error("The #forcearp option has been replaced!! See instructions on GitHub")
 					self.detectmode = 'preferarp'
 
 		#parse one or multiple router ips from settings
 		#Note: the poweroption, username and password are set globally for all routers!
+		Domoticz.Debug('Router configuration:' + str(Parameters["Address"]))
 		routerips = Parameters["Address"].split("#")[0].strip()
 		self.routers={}
 		for router in routerips.split(','):
-			thisrouter = router.strip()	
+			thisrouter = router.strip()
 			try:
-				username, hostip = thisrouter.split("@")
+				username, host = thisrouter.split("@")
 			except:
 				username = self.routeruser
-				hostip = thisrouter
-				
-			success, self.routers[hostip] = self.getrouter(hostip, username, self.routerpass, mode=self.detectmode)
+				host = thisrouter
+			try:
+				hostip, forcecmd = host.split("=")
+				hostcfg = None
+			except:
+				hostip = host
+				forcecmd = ""
+				hostcfg = self.detectmode
+			success, self.routers[hostip] = self.getrouter(hostip, username, self.routerpass, mode=hostcfg, prefabcmd=forcecmd)
 		Domoticz.Debug('Router initialized as:' + str(self.routers))
 
 		self.deleteobsolete = Parameters["Mode6"] == "True"
@@ -528,7 +551,7 @@ class BasePlugin:
 			self.beats += 1
 			return
 		self.beats=1
-		#Reset the override switch if set for a fixed duration that has expired 
+		#Reset the override switch if set for a fixed duration that has expired
 		if Devices[255].nValue==1 and self.overridefor:
 			if datetime.now() - self.overridestart > timedelta(hours=self.overridefor):
 				self.updatestatus(255, False)
@@ -547,7 +570,7 @@ class BasePlugin:
 					ok, thisrouterdata = self.getactivemacs(router)
 					if ok:
 						found += thisrouterdata
-					success = success or ok	
+					success = success or ok
 			if success:
 				Domoticz.Debug("Found these devices connected:" + str(found))
 				homecount=0
