@@ -50,8 +50,8 @@ The plugin will try several chipset specific tools for monitoring wireless conne
 If you would like to have a additional tool for a thus far unsupported chipset added to the plugin then please leave a message on the forum.
 - You can preconfigure the command(s) to use and the interface(s) to query per router like: 192.168.0.1=wl eth1 eth2&qcsapi_sockrpc eth5. in this example the wl command will be used to query interaces eth1 and eth2. The qcsapi_sockrpc will query eth5. Put an ampersand between two commands for the same router, not between the interface names or routers. You could also configure 192.168.0.1=brctl or 192.168.0.1=arp which would use the generic brctl or arp tool (don’t need interfaces specified).  
 To make finding these commands easy the auto detect script will log them for you. You can just copy the parts from the Domoticz log after running it without reconfiguring any commands.
-A Domoticz log line could look like this:
-> 2018-09-13 22:30:41.751 Status: (iDetect) Using chipset specific wl command on router 192.168.0.1 for interfaces eth5 & eth6 (=wl eth5 eth6)
+A Domoticz log line could look like this:  
+> 2018-09-13 22:30:41.751 Status: (iDetect) Using chipset specific wl command on router 192.168.0.1 for interfaces eth5 & eth6 (=wl eth5 eth6)  
 You want the part at the end, between parentheses. You can only specify commands that are supported by the plugin. For safety these are not actual shell commands, but identifiers for commands within the plugin. You can use obscure interface names that the plugin does not check for (although it would be better to leave a message on the forum to gat those added to the plugin).  
 By preconfiguring you can reduce the startup time (with can be useful in large wifi infrastructures), deal with a obscure router or exclude certain interfaces from presence detection.  
 This new option makes the #forcegeneric option (described below) kinda redundant, so i will probably remove that in a future version.
@@ -64,7 +64,7 @@ This new option makes the #forcegeneric option (described below) kinda redundant
 ## History:
 **version 0.7.0**
 - Added: option to preconfigure the router commands (skipping auto detection) and a way to easily find out what to ‘preconfigure’. See github for instructions.
-- Fixed: Router capability detection (compatibility with some firmwares that limit the ssh argument size). 
+- Fixed: Router capability detection (compatibility with some firmwares that limit the ssh argument size).  
 **`Important:`**
 Please TEST the new version (watch te log) and leave a message on the forum if it fails where the previous version succeeded. There are changes in this version that i simply cannot test, because i don’t own every brand and model of router. 
 This release introduces a completely rewritten function to detect the router capabilities. Why fix something that doesn’t seem broken? Well, it turns out the original router (shell) part of the script was to long for some routers. In that case the ssh session would fail because the script was longer than the maximum length allowed for an ssh argument. So i used a shorter notation and broke it up into de detection of available commands and the detection of the interfaces to query. The new approach is also a bit easier to maintain (add or modify chipset support).
