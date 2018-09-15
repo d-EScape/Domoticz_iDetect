@@ -68,9 +68,12 @@ This new option makes the #forcegeneric option (described below) kinda redundant
 - Added: option to preconfigure the router commands (skipping auto detection) and a way to easily find out what to ‘preconfigure’. See github for instructions.
 - Fixed: Router capability detection (compatibility with some firmwares that limit the ssh argument size).  
 **`Important:`**
-Please TEST the new version (watch te log) and leave a message on the forum if it fails where the previous version succeeded. There are changes in this version that i simply cannot test, because i don’t own every brand and model of router. 
+Please TEST the new version (watch te log) and leave a message on the forum if it fails where the previous version succeeded. There are changes in this version that i simply cannot test, because i don’t own every brand and model of router.
+
 This release introduces a completely rewritten function to detect the router capabilities. Why fix something that doesn’t seem broken? Well, it turns out the original router (shell) part of the script was to long for some routers. In that case the ssh session would fail because the script was longer than the maximum length allowed for an ssh argument. So i used a shorter notation and broke it up into de detection of available commands and the detection of the interfaces to query. The new approach is also a bit easier to maintain (add or modify chipset support).
-Using separate sessions for capabilities detection introduces some additional overhead, but only when the plugin/domoticz starts. It has zero impact on the poll times, since it generates the same poll commands as before. 
+
+Using separate sessions for capabilities detection introduces some additional overhead, but only when the plugin/domoticz starts. It has zero impact on the poll times, since it generates the same poll commands as before.
+
 An indication of the changed startup performance: The old detection function would take one session, which took 0.35 seconds on my Asus AC86. It will now take 2 sessions =  0.7 seconds. A router with two chipsets, like the AC87 will take 1+2 sessions = around 1 seconds. A mesh setup with three AC87’s will take 3 + 3x2 sessions, which translates into a little over 3 seconds. With the old function that same mesh setup would take around one second. If timeouts occur the wait time will quickly add up, so i lowered them to two seconds (per ssh session). That should not be a problem if your network, router and Domoticz host are in good shape, but please let me know if it proofs a little to close to the edge.
 Thanks to mvzut for testing and for investigating why the capabilities detection was failing on his router!
 
