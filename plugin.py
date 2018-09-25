@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.0">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.1">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -81,13 +81,13 @@ class BasePlugin:
 		self.timelastseen = {}
 		return
 
-	def getfromssh(self, host, user, passwd, routerscript, alltimeout=2, sshtimeout=2):
+	def getfromssh(self, host, user, passwd, routerscript, port=22, alltimeout=2, sshtimeout=2):
 		if passwd:
 			Domoticz.Log("Using password instead of ssh public key authentication for " + host + " (less secure!)")
-			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
+			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
 			Domoticz.Debug("Fetching data from " + host + " using: " + " ".join(cmd[:2]) + " **secret** " + " ".join(cmd[3:]))
 		else:
-			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), user+"@"+host, routerscript]
+			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
 			Domoticz.Debug("Fetching data from " + host + " using: " + " ".join(cmd))
 		starttime=datetime.now()
 		success = True
@@ -115,7 +115,7 @@ class BasePlugin:
 		Domoticz.Debug("SSH command on " + host + " took " + str(timespend.microseconds//1000) + " milliseconds.")
 		return success, output
 
-	def getrouter(self, host, user, passwd, mode='preferhw', prefabcmd=""):
+	def getrouter(self, host, user, passwd, routerport=22, mode='preferhw', prefabcmd=''):
 		#The routerscript(s) below will run on the router itself to determine which command and interfaces to use
 		#The constructed command should return a clean list of mac addresses. One address per line in the format xx:xx:xx:xx:xx:xx.
 	
@@ -209,18 +209,18 @@ exit
 		else:
 			#automatic detection
 			#find all available commands (hw specific and generic) on router
-			success, sshdata=self.getfromssh(host, user, passwd, methodq, alltimeout=2, sshtimeout=2)
+			success, sshdata=self.getfromssh(host, user, passwd, methodq, port=routerport, alltimeout=2, sshtimeout=2)
 			if success:
 				foundmethods = sshdata.decode("utf-8")[1:].split("~")
 				Domoticz.Debug("Available commands on " + host + ":" + str(foundmethods))
 			else:
 				Domoticz.Debug("Could not retreive available commands on " + host)
-				return False, {'user': user, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
+				return False, {'user': user, 'port': routerport, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
 
 			#find the wifi interfaces for hw specific commands
 			for method in hwmethods:
 				if method in foundmethods:
-					success, sshdata=self.getfromssh(host, user, passwd, ifq[method], alltimeout=2, sshtimeout=2)
+					success, sshdata=self.getfromssh(host, user, passwd, ifq[method], port=routerport, alltimeout=2, sshtimeout=2)
 					if success:
 						interfaces = sshdata.decode("utf-8")[1:].split("~")
 						foundif[method]=interfaces
@@ -263,17 +263,17 @@ exit
 
 		if pollscript == "":
 			Domoticz.Debug("Could not construct router query command for " + host)
-			return False, {'user': user, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
+			return False, {'user': user,'port': routerport, 'cmd': '', 'initialized': False, 'prospone': datetime.now() + timedelta(seconds=12), 'errorcount': 1}
 		else:
 			pollscript = "export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH" + pollscript + ";exit"
 			Domoticz.Debug("Constructed this cmd for the router " + host + " to poll for present phones: " + pollscript)
-			return True, {'user': user, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0}
+			return True, {'user': user,'port': routerport, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0}
 
 	def getactivemacs(self, router):
 		errorcount=self.routers[router]['errorcount']
 		if self.routers[router]['initialized']:
 			Domoticz.Debug("Polling presense data from " + router)
-			success, sshdata=self.getfromssh(router, self.routers[router]['user'], self.routerpass, self.routers[router]['cmd'])
+			success, sshdata=self.getfromssh(router, self.routers[router]['user'], self.routerpass, self.routers[router]['cmd'], port=self.routers[router]['port'])
 			if success:
 				if errorcount > 0:
 					self.routers[router]['errorcount'] = 0
@@ -284,7 +284,7 @@ exit
 				return True, list
 		else:
 			Domoticz.Debug(router + " was not properly initialized. Retrying to get router capabilities (and skipping this poll round).")
-			gotit, self.routers[router] = self.getrouter(router, self.routers[router]['user'], self.routerpass, mode=self.detectmode)
+			gotit, self.routers[router] = self.getrouter(router, self.routers[router]['user'], self.routerpass, port=self.routers[router]['port'], mode=self.detectmode)
 			if gotit:
 				self.routers[router]['errorcount'] = 0
 				return False, None
@@ -441,18 +441,24 @@ exit
 		for router in routerips.split(','):
 			thisrouter = router.strip()
 			try:
-				username, host = thisrouter.split("@")
+				username, hoststr = thisrouter.split("@")
 			except:
 				username = self.routeruser
-				host = thisrouter
+				hoststr = thisrouter
 			try:
-				hostip, forcecmd = host.split("=")
+				host, forcecmd = hoststr.split("=")
 				hostcfg = None
 			except:
-				hostip = host
+				host = hoststr
 				forcecmd = ""
 				hostcfg = self.detectmode
-			success, self.routers[hostip] = self.getrouter(hostip, username, self.routerpass, mode=hostcfg, prefabcmd=forcecmd)
+			try:
+				hostip, portstr = host.split(":")
+				hostport = int(portstr)
+			except:
+				hostip = host
+				hostport = 22
+			success, self.routers[hostip] = self.getrouter(hostip, username, self.routerpass, routerport=hostport, mode=hostcfg, prefabcmd=forcecmd)
 		Domoticz.Debug('Router initialized as:' + str(self.routers))
 
 		self.deleteobsolete = Parameters["Mode6"] == "True"
