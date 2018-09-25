@@ -64,6 +64,11 @@ This new option makes the #forcegeneric option (described below) kinda redundant
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
 
 ## History:
+**version 0.7.1**
+- Added: You van specify a different ssh portnumber (optional) like: <host>:<port>
+The hostname or ip of the router is still the only required configuration parameter, but the full options syntax is now:  
+ <username>@<routerip>:<routerport>=<preconfigured poll command>
+
 **version 0.7.0**
 - Added: option to preconfigure the router commands (skipping auto detection) and a way to easily find out what to ‘preconfigure’. See github for instructions.
 - Fixed: Router capability detection (compatibility with some firmwares that limit the ssh argument size).  
