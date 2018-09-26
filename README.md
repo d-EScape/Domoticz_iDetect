@@ -66,7 +66,8 @@ This new option makes the #forcegeneric option (described below) kinda redundant
 ## History:
 **version 0.7.2**
 - Enhanced: Found a different way to prevent multiple router configurations from overloading the (single threaded) python plugin framework when timeouts occur. 
-The timeouts per ssh session are a little more relaxed now and the plugin will just skip a poll if a previous poll cycle could not complete in time. It will also worn you if a poll cycle takes over 50% of the poll interval time, because that kind of (wait) times could indicate that something is wrong (slowed down by cpu, network, router). On my single router setup it takes about 3% of a 10 second interval and i would expect most configurations to stay below 15%, even with multiple routers. Higher percentages might have a performance impact on Domoticz or at least it’s single threaded python plugin framework.
+The timeouts per ssh session are a little more relaxed now and the plugin will just skip a poll if a previous poll cycle could not complete in time. It will also warn you if a poll cycle takes over 50% of the poll interval time, because that kind of (wait) times could indicate that something is wrong (slowed down by cpu, network, router). On my single router setup it takes about 3% of a 10 second interval and i would expect most configurations to stay below 15%, even with multiple routers. Higher percentages might have a performance impact on Domoticz or at least it’s single threaded python plugin framework.
+If you just want to check the percentages on your setup you can see them in debug mode.
 
 **version 0.7.1**
 - Added: You van specify a different ssh portnumber (optional) like: <host>:<port>
