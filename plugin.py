@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.1">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.2">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -81,7 +81,7 @@ class BasePlugin:
 		self.timelastseen = {}
 		return
 
-	def getfromssh(self, host, user, passwd, routerscript, port=22, alltimeout=2, sshtimeout=2):
+	def getfromssh(self, host, user, passwd, routerscript, port=22, alltimeout=5, sshtimeout=3):
 		if passwd:
 			Domoticz.Log("Using password instead of ssh public key authentication for " + host + " (less secure!)")
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
@@ -209,7 +209,7 @@ exit
 		else:
 			#automatic detection
 			#find all available commands (hw specific and generic) on router
-			success, sshdata=self.getfromssh(host, user, passwd, methodq, port=routerport, alltimeout=2, sshtimeout=2)
+			success, sshdata=self.getfromssh(host, user, passwd, methodq, port=routerport)
 			if success:
 				foundmethods = sshdata.decode("utf-8")[1:].split("~")
 				Domoticz.Debug("Available commands on " + host + ":" + str(foundmethods))
@@ -220,7 +220,7 @@ exit
 			#find the wifi interfaces for hw specific commands
 			for method in hwmethods:
 				if method in foundmethods:
-					success, sshdata=self.getfromssh(host, user, passwd, ifq[method], port=routerport, alltimeout=2, sshtimeout=2)
+					success, sshdata=self.getfromssh(host, user, passwd, ifq[method], port=routerport)
 					if success:
 						interfaces = sshdata.decode("utf-8")[1:].split("~")
 						foundif[method]=interfaces
@@ -351,6 +351,9 @@ exit
 		self.initcomplete=False
 		self.initfailures=False
 		self.slowdown=False
+		self.pollfinished=True
+		self.pollstart=None
+		self.pollinterval=int(Parameters["Mode2"])
 
 		#Select or create icons for devices
 		homeicon="idetect-home"
@@ -542,7 +545,7 @@ exit
 					self.initfailures=True
 
 		#Finalizing the initialization by setting the heartbeat needed for poll interval
-		self.setpollinterval(int(Parameters["Mode2"]))
+		self.setpollinterval(self.pollinterval)
 		if not self.initfailures:
 			self.initcomplete=True
 		Domoticz.Debug("Plugin initialization done.")
@@ -567,6 +570,11 @@ exit
  			Domoticz.Error("There are no routers to monitor. Please check your configuration.")
  			return
 		else:
+			if not self.pollfinished:
+				Domoticz.Status("Warning! Skipping this poll cycle because the previous session has not finished yet (investigate what is slowing things down if you frequently get this message).")
+				return
+			self.pollfinished=False
+			self.pollstart=datetime.now()
 			found = []
 			success = False
 			for router in self.routers:
@@ -615,6 +623,13 @@ exit
 					self.updatestatus(1, False)
 			else:
 				Domoticz.Debug("Did not retreive WLAN information from any router")
+			self.pollfinished=True
+			timespend=(datetime.now()-self.pollstart).microseconds//1000
+			pollload=100*timespend//(self.pollinterval*1000)
+			if pollload > 50:
+				Domoticz.Status("Warning! Entire poll took " + str(pollload) + "% of the poll interval time (" + str(timespend) + " milliseconds). Investigate what is slowing things down if you frequently get this message.")
+			else:
+				Domoticz.Debug("Entire poll took " + str(pollload) + "% of the poll interval time (" + str(timespend) + " milliseconds)")
 
 	def onCommand(self, Unit, Command, Level, Hue):
 		#only allow the override switch to be operated and only if overrides are enabled
