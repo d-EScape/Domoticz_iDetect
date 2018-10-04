@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.2">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.3">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
