@@ -284,7 +284,7 @@ exit
 				return True, list
 		else:
 			Domoticz.Debug(router + " was not properly initialized. Retrying to get router capabilities (and skipping this poll round).")
-			gotit, self.routers[router] = self.getrouter(router, self.routers[router]['user'], self.routerpass, port=self.routers[router]['port'], mode=self.detectmode)
+			gotit, self.routers[router] = self.getrouter(router, self.routers[router]['user'], self.routerpass, routerport=self.routers[router]['port'], mode=self.detectmode)
 			if gotit:
 				self.routers[router]['errorcount'] = 0
 				return False, None
