@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.3">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.4">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -71,6 +71,7 @@
 
 import Domoticz
 from datetime import datetime, timedelta
+import re
 import subprocess
 
 class BasePlugin:
@@ -79,6 +80,7 @@ class BasePlugin:
 		self.monitormacs = {}
 		self.graceoffline = 0
 		self.timelastseen = {}
+		self.mac_format = re.compile(r'[a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}')
 		return
 
 	def getfromssh(self, host, user, passwd, routerscript, port=22, alltimeout=5, sshtimeout=3):
@@ -181,6 +183,10 @@ exit
 		generic['brctl']=";brctl showmacs br0 | grep '..:..:..:..:..:..' | awk '{print $ 2}'"
 		generic['arp']=";arp -a | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
 		generic['procarp']=";cat /proc/net/arp | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
+		
+		custom={}
+		custom['routeros']="ip arp print"
+		custom['test']="arp -a"
 
 		pollscript = ""
 		
@@ -195,6 +201,11 @@ exit
 		#Use preconfigured command/interface combo if available (instead of auto detection)
 		if prefabcmd != "":
 			Domoticz.Debug("Prefab command for " + host + "= >" + prefabcmd)
+			#if a custom command is preconfigured just return that command without any additions and assume the output will not be formatted
+			if prefabcmd in custom:
+				pollscript=custom[prefabcmd]
+				Domoticz.Status("Using preconfigured custom command on router " + host + ": " + pollscript)
+				return True, {'user': user,'port': routerport, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0, 'rawoutput': True}
 			foundmethods=hwmethods + swmethods #assume every cmd is available
 			sources=prefabcmd.strip().split('&')
 			for source in sources:
@@ -278,9 +289,12 @@ exit
 				if errorcount > 0:
 					self.routers[router]['errorcount'] = 0
 					Domoticz.Status('Connection restored for ' + router)
-				list=[]
-				for item in sshdata.splitlines():
-					list.append(item.decode("utf-8").upper())
+
+				list = self.mac_format.findall(sshdata.decode("utf-8").upper())
+# Old code to put addresses in a list ... remove if the re approach is stable		
+#				list=[]
+#				for item in sshdata.splitlines():
+#					list.append(item.decode("utf-8").upper())
 				return True, list
 		else:
 			Domoticz.Debug(router + " was not properly initialized. Retrying to get router capabilities (and skipping this poll round).")
