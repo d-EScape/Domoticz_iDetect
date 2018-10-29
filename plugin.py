@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.4">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.6">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -185,7 +185,8 @@ exit
 		generic['procarp']=";cat /proc/net/arp | grep '..:..:..:..:..:..' | awk '{print $ 4}'"
 		
 		custom={}
-		custom['routeros']="ip arp print"
+		custom['routeros']="interface wireless registration-table print"
+		custom['routeros-arp']="ip arp print"
 		custom['test']="arp -a"
 
 		pollscript = ""
@@ -205,7 +206,7 @@ exit
 			if prefabcmd in custom:
 				pollscript=custom[prefabcmd]
 				Domoticz.Status("Using preconfigured custom command on router " + host + ": " + pollscript)
-				return True, {'user': user,'port': routerport, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0, 'rawoutput': True}
+				return True, {'user': user,'port': routerport, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0}
 			foundmethods=hwmethods + swmethods #assume every cmd is available
 			sources=prefabcmd.strip().split('&')
 			for source in sources:
