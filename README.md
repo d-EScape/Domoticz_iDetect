@@ -59,7 +59,7 @@ By preconfiguring you can reduce the startup time (with can be useful in large w
 This new option makes the #forcegeneric option (described below) kinda redundant, so i will probably remove that in a future version.
 - Router specific (custom) configurations   
 Some routers do not provide a full linux-like/busybox environment or only offer their own proprietary configuration commands. If you know the right commands to query those routers then i can add them to the plugin as a custom command you can (pre)configure in the plugin settings as <routerip>=<customname>. Please leave a message in the forum to get your router added.   
-**Custom routers currently supported (change the ip-address to yours):**    
+**Custom routers currently supported (change the ip-address as needed):**    
 MikroTik routerboard (running routeros) wifi: 192.168.0.1=routeros    
 MikroTik routerboard (running routeros) no wifi: 192.168.0.1=routeros-arp    
 - (Deprecated! but backwards compatible for now) It is possible to force the plugin into using generic tools. This is not the preferred way, but can be useful in some situations. Because the plugin is already using all available settings fields i combined this setting with the 'WiFi Router IP address' field. If you add '#forcegeneric' behind the address(es) it will skip the detection of chipset specific tools (eg 192.168.0.1#forcegeneric). This option should be added at the and of the configuration line and will influence all routers configured (do not add it per router!). It should not be used in a multi router setup anyway (using a generic tool on a router will make absence detection slower and on some routers less reliable).
