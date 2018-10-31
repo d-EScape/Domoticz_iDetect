@@ -58,7 +58,7 @@ You want the part at the end, between parentheses. You can only specify commands
 By preconfiguring you can reduce the startup time (with can be useful in large wifi infrastructures), deal with a obscure router or exclude certain interfaces from presence detection.  
 This new option makes the #forcegeneric option (described below) kinda redundant, so i will probably remove that in a future version.
 - Router specific (custom) configurations   
-Some routers do not provide a full linux-like/busybox environment or only offer their own proprietary configuration commands. If you know the right commands to query those routers then i can add them to the plugin as a custom command you can (pre)configure in the plugin settings as <routerip>=<customname>. Please leave a message in the forum to get your router added.   
+Some routers do not provide a full linux-like/busybox environment or only offer their own proprietary configuration commands. If you know the right commands to query those routers then i can add them to the plugin as a custom command you can (pre)configure in the plugin settings as routerip=customname. Please leave a message in the forum to get your router added.   
 **Custom routers currently supported (change the ip-address as needed):**    
 MikroTik routerboard (running routeros) wifi: 192.168.0.1=routeros    
 MikroTik routerboard (running routeros) no wifi: 192.168.0.1=routeros-arp    
