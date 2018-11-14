@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.6">
+<plugin key="idetect" name="iDetect Wifi presence detection " author="ESCape" version="0.7.7">
 	<description>
 		<h2>Presence detection by router</h2><br/>
 		<h3>Authentication settings</h3>
@@ -89,7 +89,10 @@ class BasePlugin:
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
 			Domoticz.Debug("Fetching data from " + host + " using: " + " ".join(cmd[:2]) + " **secret** " + " ".join(cmd[3:]))
 		else:
-			cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
+			if self.keyfile != '':
+				cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
+			else:
+				cmd =[self.sshbin, "-i", self.keyfile, "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
 			Domoticz.Debug("Fetching data from " + host + " using: " + " ".join(cmd))
 		starttime=datetime.now()
 		success = True
@@ -292,10 +295,6 @@ exit
 					Domoticz.Status('Connection restored for ' + router)
 
 				list = self.mac_format.findall(sshdata.decode("utf-8").upper())
-# Old code to put addresses in a list ... remove if the re approach is stable		
-#				list=[]
-#				for item in sshdata.splitlines():
-#					list.append(item.decode("utf-8").upper())
 				return True, list
 		else:
 			Domoticz.Debug(router + " was not properly initialized. Retrying to get router capabilities (and skipping this poll round).")
@@ -407,7 +406,16 @@ exit
 			Domoticz.Error("Aborting plugin initialization because SSH client could not be found")
 			return
 
-		self.routeruser = Parameters["Username"]
+		#get router user name and optional keyfile location for authentication
+		Domoticz.Debug('Parsing user and optional keyfile from:' + str(Parameters["Username"]))
+		try:
+			self.routeruser, self.keyfile = Parameters["Username"].split("#")
+		except:
+			self.routeruser = Parameters["Username"]
+			self.keyfile = ''
+		else:
+			Domoticz.Status('Using custom keyfile for authentication:' + self.keyfile)
+		
 		self.routerpass = Parameters["Password"]
 		if self.routerpass != "":
 			if not oscmdexists("sshpass -V"):
