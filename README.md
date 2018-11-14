@@ -47,8 +47,7 @@ If the plugin keeps throwing errors like "Could not retreive router capabilities
 
 ## Additional options and technical info
 The plugin will try several chipset specific tools for monitoring wireless connections on your router. These tools are the most reliable and responsive way to tell if a device is connected (present) or not (absent). If no suitable tool can be found on the router the script will fall back on generic Linux commands that monitor the network bridge or arp table. A but slower to respond when someone leaves the house, but still usable (minutes instead of seconds). It is possible, but not necessary, te preconfigure the script and thereby skipping the automatic detection.
-If you would like to have a additional tool for a thus far unsupported chipset added to the plugin then please leave a message on the forum.
-- If you need to specify a custom key file name for ssh authentication, you can add file name (full path) after the router username in the username field, separated by # (e.g. admin#/home/pi/.ssh/id_rsa)
+If you would like to have a additional tool for a thus far unsupported chipset added to the plugin then please leave a message on the forum.   
 - You can preconfigure the command(s) to use and the interface(s) to query per router like:   
 `192.168.0.1=wl eth1 eth2&qcsapi_sockrpc eth5`   
 In this example the wl command will be used to query interaces eth1 and eth2. The qcsapi_sockrpc will query eth5. Put an ampersand between two commands for the same router, not between the interface names or routers. You could also configure 192.168.0.1=brctl or 192.168.0.1=arp which would use the generic brctl or arp tool (don’t need interfaces specified).  
@@ -65,6 +64,7 @@ MikroTik routerboard (running routeros) wifi: 192.168.0.1=routeros
 MikroTik routerboard (running routeros) no wifi: 192.168.0.1=routeros-arp    
 - (Deprecated! but backwards compatible for now) It is possible to force the plugin into using generic tools. This is not the preferred way, but can be useful in some situations. Because the plugin is already using all available settings fields i combined this setting with the 'WiFi Router IP address' field. If you add '#forcegeneric' behind the address(es) it will skip the detection of chipset specific tools (eg 192.168.0.1#forcegeneric). This option should be added at the and of the configuration line and will influence all routers configured (do not add it per router!). It should not be used in a multi router setup anyway (using a generic tool on a router will make absence detection slower and on some routers less reliable).
 - If you need te specify different usernames for different routers, you can do so by adding username@ in front of the routers address, like: admin@192.168.0.1,root@192.168.0.2 (if you are using password based authentication, then the password must be the same on all routers)
+- If you need to specify a custom key file name for ssh authentication, you can add file name (full path) after the router username in the username field, separated by # (e.g. admin#/home/pi/.ssh/id_rsa).   
 - You can ignore a mac address (mobile device) from the 'Anyone home' detection. Just add #ignore behind the mac address in question. The device will still be monitored individually. Eg: phone1=11:22:33:44:55:66, phone2=33:44:55:66:77:88#ignore will only see anyone home when phone1 is present, but will still monitor both phone1 and phone2.
 
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings021.jpg)
