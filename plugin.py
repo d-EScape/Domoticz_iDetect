@@ -190,10 +190,11 @@ exit
 		custom={}
 		custom['routeros']="interface wireless registration-table print"
 		custom['routeros-arp']="ip arp print"
+		custom['zyxel-arp']="show arp-table"
 		custom['test']="arp -a"
 
 		pollscript = ""
-		
+
 		#the forcegeneric option is replaced by the prefabcmd, but lets keep if for a little while for backwards compatibility 
 		#TO BE REMOVED!!!!
 		if mode=="anygeneric":
