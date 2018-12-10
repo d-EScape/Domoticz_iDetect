@@ -128,7 +128,7 @@ class BasePlugin:
 		#wl = broadcom
 		#iwinfo = mac80211
 		#wlanconfig = atheros
-		#qcsapi_sockrpc = quantenna	
+		#qcsapi_sockrpc = quantenna 
 		hwmethods=['wl', 'iwinfo', 'wlanconfig', 'qcsapi_sockrpc']
 		swmethods=['brctl','arp','procarp']
 
@@ -191,6 +191,7 @@ exit
 		custom['routeros']="interface wireless registration-table print"
 		custom['routeros-arp']="ip arp print"
 		custom['zyxel-arp']="show arp-table"
+		custom['unifiusg-arp']="show arp"
 		custom['test']="arp -a"
 
 		pollscript = ""
@@ -591,8 +592,8 @@ exit
 				self.overridestart=None
 		#Start searching for present devices on all configured routers
 		if len(self.routers) < 1:
- 			Domoticz.Error("There are no routers to monitor. Please check your configuration.")
- 			return
+			Domoticz.Error("There are no routers to monitor. Please check your configuration.")
+			return
 		else:
 			if not self.pollfinished:
 				Domoticz.Status("Warning! Skipping this poll cycle because the previous session has not finished yet (investigate what is slowing things down if you frequently get this message).")
