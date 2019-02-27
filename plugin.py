@@ -210,7 +210,7 @@ exit
 			#if a custom command is preconfigured just return that command without any additions and assume the output will not be formatted
 			if prefabcmd in custom:
 				pollscript=custom[prefabcmd]
-				Domoticz.Status("Using preconfigured custom command on router " + host + ": " + pollscript)
+				Domoticz.Log("Using preconfigured custom command on router " + host + ": " + pollscript)
 				return True, {'user': user,'port': routerport, 'cmd': pollscript, 'initialized': True, 'prospone': datetime.now(), 'errorcount': 0}
 			foundmethods=hwmethods + swmethods #assume every cmd is available
 			sources=prefabcmd.strip().split('&')
@@ -271,12 +271,12 @@ exit
 			elif method in swmethods:
 				if pollscript == "":
 					pollscript = generic[method]
-					Domoticz.Status("Using generic " + method + " command on router " + host + ". Will respond slower and on some routers a little less reliable to absence")
+					Domoticz.Log("Using generic " + method + " command on router " + host + ". Will respond slower and on some routers a little less reliable to absence")
 					break
 			else:
 				Domoticz.Error("Unsupported command (pre)configured for " + host + ": " + method)
 			if method in hwmethods:
-				Domoticz.Status("Using chipset specific " + method + " command on router " + host + " for interfaces " + " & ".join(foundif[method]) + " (=" + method + " " + " ".join(foundif[method]) + ")")
+				Domoticz.Log("Using chipset specific " + method + " command on router " + host + " for interfaces " + " & ".join(foundif[method]) + " (=" + method + " " + " ".join(foundif[method]) + ")")
 
 		if pollscript == "":
 			Domoticz.Debug("Could not construct router query command for " + host)
@@ -294,7 +294,7 @@ exit
 			if success:
 				if errorcount > 0:
 					self.routers[router]['errorcount'] = 0
-					Domoticz.Status('Connection restored for ' + router)
+					Domoticz.Log('Connection restored for ' + router)
 
 				list = self.mac_format.findall(sshdata.decode("utf-8").upper())
 				return True, list
@@ -341,7 +341,7 @@ exit
 			return
 		if Devices[id].nValue != nvalue or Devices[id].sValue != svalue:
 			Devices[id].Update(nValue=nvalue, sValue=svalue)
-			Domoticz.Status("Changing presence of " + Devices[id].Name + " to " + svalue)
+			Domoticz.Log("Changing presence of " + Devices[id].Name + " to " + svalue)
 
 	def setpollinterval(self, target, delayrun=False):
 		if target > 30:
@@ -416,7 +416,7 @@ exit
 			self.routeruser = Parameters["Username"]
 			self.keyfile = ''
 		else:
-			Domoticz.Status('Using custom keyfile for authentication:' + self.keyfile)
+			Domoticz.Log('Using custom keyfile for authentication:' + self.keyfile)
 		
 		self.routerpass = Parameters["Password"]
 		if self.routerpass != "":
@@ -596,7 +596,7 @@ exit
 			return
 		else:
 			if not self.pollfinished:
-				Domoticz.Status("Warning! Skipping this poll cycle because the previous session has not finished yet (investigate what is slowing things down if you frequently get this message).")
+				Domoticz.Log("Warning! Skipping this poll cycle because the previous session has not finished yet (investigate what is slowing things down if you frequently get this message).")
 				return
 			self.pollfinished=False
 			self.pollstart=datetime.now()
@@ -636,7 +636,7 @@ exit
 
 				if (homecount + gonecount) != self.macmonitorcount:
 					Domoticz.Debug("Homecount=" + str(homecount) + "; Gonecount=" + str(gonecount) + "; Totalmacs=" + str(self.macmonitorcount))
-					Domoticz.Status("Awaiting confirmation on absence of " + str(self.macmonitorcount-(homecount+gonecount)) + " devices")
+					Domoticz.Log("Awaiting confirmation on absence of " + str(self.macmonitorcount-(homecount+gonecount)) + " devices")
 				#Set Anyone home device based on MAC detection and Override status
 				if homecount > 0:
 					self.updatestatus(1, True)
@@ -652,7 +652,7 @@ exit
 			timespend=(datetime.now()-self.pollstart).microseconds//1000
 			pollload=100*timespend//(self.pollinterval*1000)
 			if pollload > 50:
-				Domoticz.Status("Warning! Entire poll took " + str(pollload) + "% of the poll interval time (" + str(timespend) + " milliseconds). Investigate what is slowing things down if you frequently get this message.")
+				Domoticz.Log("Warning! Entire poll took " + str(pollload) + "% of the poll interval time (" + str(timespend) + " milliseconds). Investigate what is slowing things down if you frequently get this message.")
 			else:
 				Domoticz.Debug("Entire poll took " + str(pollload) + "% of the poll interval time (" + str(timespend) + " milliseconds)")
 
