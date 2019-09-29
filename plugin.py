@@ -89,7 +89,7 @@ class BasePlugin:
 			cmd =["sshpass", "-p", passwd, self.sshbin, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
 			Domoticz.Debug("Fetching data from " + host + " using: " + " ".join(cmd[:2]) + " **secret** " + " ".join(cmd[3:]))
 		else:
-			if self.keyfile != '':
+			if self.keyfile == '':
 				cmd =[self.sshbin, "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
 			else:
 				cmd =[self.sshbin, "-i", self.keyfile, "-o", "ConnectTimeout=" + str(sshtimeout), '-p'+str(port), user+"@"+host, routerscript]
