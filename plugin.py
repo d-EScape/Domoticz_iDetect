@@ -1,4 +1,4 @@
-# Domoticz Python Plugin to monitor router for presence/absence of wifi devices without pinging them (pinging can drain your phone battery).
+# Domoticz Python Plugin to monitor tracker for presence/absence of wifi devices without pinging them (pinging can drain your phone battery).
 #
 # Author: ESCape
 #
@@ -74,14 +74,14 @@ from datetime import datetime, timedelta
 import re
 import subprocess
 import threading
-from routers import poll_methods
+from trackers import poll_methods
 import helpers.data_helper as data_helper
 from override_switch import override_switch
 
-class wireless_device():
+class tag_device():
 	#domoticz id is de friendly name
-	def __init__(self, mac, friendly_name, ignore_for_anyonehome=False, grace_period=0):
-		self.mac = mac
+	def __init__(self, tag_id, friendly_name, ignore_for_anyonehome=False, grace_period=0):
+		self.tag_id = tag_id
 		self.friendly_name = friendly_name
 		self.ignore_for_anyonehome = ignore_for_anyonehome
 		self.grace_period = grace_period
@@ -93,7 +93,7 @@ class wireless_device():
 		self.domoticz_unit = get_or_create_unit(self.friendly_name)
 		Domoticz.Debug('start get or create wireless device')
 		self.present = get_domoticz_status(self.domoticz_unit)
-		Domoticz.Debug(self.friendly_name + ' monitor mac:' + self.mac + ', domoticz unit:' + str(self.domoticz_unit))
+		Domoticz.Debug(self.friendly_name + ' monitor tag_id:' + self.tag_id + ', domoticz unit:' + str(self.domoticz_unit))
 		
 	def i_see_you(self):
 		self.last_seen = datetime.now()
@@ -204,6 +204,9 @@ class BasePlugin:
 			self.debug=True
 		else:
 			self.debug=False
+			
+		self.active_trackers={}
+		self.tags_to_monitor={}
 
 		self.present_count = 0
 		self.anyone_home = False
@@ -227,18 +230,18 @@ class BasePlugin:
 			except subprocess.CalledProcessError as err:
 				Domoticz.Debug("Trying to determine OS user raised an error (error: " + str(err.returncode) + "):" + str(err.output))
 
-		#get router user name and optional keyfile location for authentication
+		#get tracker user name and optional keyfile location for authentication
 		Domoticz.Debug('Parsing user and optional keyfile from:' + str(Parameters["Username"]))
 		try:
-			self.routeruser, self.keyfile = Parameters["Username"].split("#")
+			self.trackeruser, self.keyfile = Parameters["Username"].split("#")
 		except:
-			self.routeruser = Parameters["Username"]
+			self.trackeruser = Parameters["Username"]
 			self.keyfile = ''
 		else:
 			Domoticz.Status('Using custom keyfile for authentication:' + self.keyfile)
 		
-		self.routerpass = Parameters["Password"]
-		if self.routerpass != "":
+		self.trackerpass = Parameters["Password"]
+		if self.trackerpass != "":
 			if not oscmdexists("sshpass -V"):
 				Domoticz.Error("A SSH password is set for the plugin, but the sshpass command seems to be unavailable. Please install it first.")
 				return
@@ -257,10 +260,9 @@ class BasePlugin:
 
 		#prepare variables and use the remaining parameters from te settings page
 		self.graceoffline = int(Parameters["Mode3"])
-		self.devices_to_look_for={}
-		configured_macs=Parameters["Mode1"].replace(" ", "").split(",")
+		configured_tag_ids=Parameters["Mode1"].replace(" ", "").split(",")
 		units_in_use=[]
-		for item in configured_macs:
+		for item in configured_tag_ids:
 			try:
 				devpart, option = item.split("#")
 				if option.strip().lower() == "ignore":
@@ -271,14 +273,21 @@ class BasePlugin:
 				devpart = item
 				ignore_me = False
 			try:
-				friendly_name, mac = devpart.split("=")
+				friendly_name, tag_id = devpart.split("=")
 				clean_name = friendly_name.strip()
-				clean_mac = mac.strip().upper()
+				clean_tag_id = tag_id.strip().upper()
 			except:
-				Domoticz.Error("Invalid device/mac setting in: " + str(configured_macs))
-			self.devices_to_look_for[clean_mac]=wireless_device(clean_mac, clean_name, ignore_me, self.graceoffline)
-			units_in_use.append(self.devices_to_look_for[clean_mac].domoticz_unit)
-		Domoticz.Debug("Monitoring " + str(self.devices_to_look_for) + " for presence.")
+				Domoticz.Error("Invalid device/tag_id setting in: " + str(configured_tag_ids))
+			self.tags_to_monitor[clean_tag_id]=tag_device(clean_tag_id, clean_name, ignore_me, self.graceoffline)
+			if data_helper.is_ip_address(clean_tag_id):
+				Domoticz.Debug('Will use local ping to monitor presence for: ' + clean_tag_id)
+				if not 'local pinger' in self.active_trackers:
+					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 15)
+					self.active_trackers['local pinger'].register_list_interpreter(self.onDataReceive)
+				self.active_trackers['local pinger'].register_tag(clean_tag_id)
+			units_in_use.append(self.tags_to_monitor[clean_tag_id].domoticz_unit)
+			
+		Domoticz.Debug("Monitoring " + str(self.tags_to_monitor) + " for presence.")
 		self.deleteobsolete = Parameters["Mode6"] == "True"
 		for d in Devices:
 			if not d in units_in_use:
@@ -286,18 +295,17 @@ class BasePlugin:
 					handle_unused_unit(d, self.deleteobsolete)
 		
 
-		#parse one or multiple router ips from settings
-		#Note: the poweroption, username and password are set globally for all routers!
-		Domoticz.Debug('Router configuration:' + str(Parameters["Address"]))
-		routerips = Parameters["Address"].split("#")[0].strip()
-		self.routers={}
-		for router in routerips.split(','):
-			thisrouter = router.strip()
+		#parse one or multiple tracker ips from settings
+		#Note: the poweroption, username and password are set globally for all trackers!
+		Domoticz.Debug('Tracker configuration:' + str(Parameters["Address"]))
+		trackerips = Parameters["Address"].split("#")[0].strip()
+		for tracker in trackerips.split(','):
+			thistracker = tracker.strip()
 			try:
-				host_user, host_config = thisrouter.split("@")
+				host_user, host_config = thistracker.split("@")
 			except:
-				host_user = self.routeruser
-				host_config = thisrouter
+				host_user = self.trackeruser
+				host_config = thistracker
 			try:
 				host_address, host_type = host_config.split("=")
 			except:
@@ -309,23 +317,23 @@ class BasePlugin:
 			except:
 				host_ip = host_address
 				host_port = 22				
-			self.routers[host_ip]=poll_methods[host_type](host_ip, host_port, host_user, self.routerpass, self.keyfile, self.pollinterval)
-			self.routers[host_ip].register_list_interpreter(self.onMacReceive)
-		Domoticz.Debug('Routers initialized as:' + str(self.routers))
+			self.active_trackers[host_ip]=poll_methods[host_type](host_ip, host_port, host_user, self.trackerpass, self.keyfile, self.pollinterval)
+			self.active_trackers[host_ip].register_list_interpreter(self.onDataReceive)
+		Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
 			
 		Domoticz.Debug("Plugin initialization done.")
 		Domoticz.Heartbeat(4)
 			
-	def onMacReceive(self, source):
-		Domoticz.Debug('Inbound data from: ' + str(source.router_ip) + ' containing ' + str(source.found_macs))
-		for seen in source.found_macs:
-			if seen in self.devices_to_look_for:
-				self.devices_to_look_for[seen].i_see_you()
+	def onDataReceive(self, source):
+		Domoticz.Debug('Inbound data from: ' + str(source.tracker_ip) + ' containing ' + str(source.found_tag_ids))
+		for seen in source.found_tag_ids:
+			if seen in self.tags_to_monitor:
+				self.tags_to_monitor[seen].i_see_you()
 		self.present_count = 0
-		for d in self.devices_to_look_for:
-			self.devices_to_look_for[d].check_if_seen()
-		for d in self.devices_to_look_for:
-			if self.devices_to_look_for[d].present and not self.devices_to_look_for[d].ignore_for_anyonehome:
+		for d in self.tags_to_monitor:
+			self.tags_to_monitor[d].check_if_seen()
+		for d in self.tags_to_monitor:
+			if self.tags_to_monitor[d].present and not self.tags_to_monitor[d].ignore_for_anyonehome:
 				self.present_count = self.present_count + 1
 		Domoticz.Debug(str(self.present_count) + ' devices are present (excluding ignored devices)')
 		if (self.present_count == 0 and not self.override.active) and self.anyone_home:
@@ -339,8 +347,8 @@ class BasePlugin:
 
 	def onHeartbeat(self):
 		Domoticz.Debug('onHeartbeat called')
-		for r in self.routers:
-			self.routers[r].heartbeat_handler()
+		for r in self.active_trackers:
+			self.active_trackers[r].heartbeat_handler()
 		if self.override.has_expired(self.present_count > 0):
 			Domoticz.Status('Override has ended')
 			self.override.set_inactive()
@@ -364,8 +372,8 @@ class BasePlugin:
 		
 	def onStop(self):
 		Domoticz.Debug('onStop called')
-#		for r in self.routers:
-#			self.routers[r].stop_now()
+#		for r in self.active_trackers:
+#			self.active_trackers[r].stop_now()
 
 global _plugin
 _plugin = BasePlugin()
