@@ -341,7 +341,7 @@ class BasePlugin:
 		Domoticz.Debug('onHeartbeat called')
 		for r in self.routers:
 			self.routers[r].heartbeat_handler()
-		if self.override.has_expired(self.anyone_home):
+		if self.override.has_expired(self.present_count > 0):
 			Domoticz.Status('Override has ended')
 			self.override.set_inactive()
 			update_domoticz_status(self.OVERRIDE_UNIT, False)
