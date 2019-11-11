@@ -24,10 +24,10 @@
 		</ul>
 	</description>
 	<params>
-		<param field="Address" label="Wifi router IP Address" width="200px" required="true" default="192.168.0.1"/>
+		<param field="Address" label="Tracker/router Address" width="200px" required="true" default="192.168.0.1"/>
 		<param field="Username" label="Username" width="200px" required="true" default=""/>
 		<param field="Password" label="Password" width="200px" required="false" default="" password="true"/>
-		<param field="Mode1" label="MAC addresses te monitor" width="500px" required="true" default="phone1=A1:B1:01:01:01:01,phone2=C2:D2:02:02:02:02"/>
+		<param field="Mode1" label="Tags to monitor (mac or ip)" width="500px" required="true" default="phone1=A1:B1:01:01:01:01,phone2=C2:D2:02:02:02:02"/>
 		<param field="Mode6" label="Remove obsolete" width="250px">
 			<options>
 				<option label="Delete obsolete devices" value="True" default="true"/>
@@ -282,7 +282,7 @@ class BasePlugin:
 			if data_helper.is_ip_address(clean_tag_id):
 				Domoticz.Debug('Will use local ping to monitor presence for: ' + clean_tag_id)
 				if not 'local pinger' in self.active_trackers:
-					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 15)
+					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 30)
 					self.active_trackers['local pinger'].register_list_interpreter(self.onDataReceive)
 				self.active_trackers['local pinger'].register_tag(clean_tag_id)
 			units_in_use.append(self.tags_to_monitor[clean_tag_id].domoticz_unit)
