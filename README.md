@@ -32,11 +32,11 @@ There are several ways to configure some settings, but only on value will be use
 * Global setting (corresponding field on the plugin’s settings page)
 
 Tracker configuration
-> <ip address>#<options>
+> `<ip address>#<options>`
 Trackers should be separated by comma (,)
 
 Or (for backward compatibility)
-> <username>@<ip address>:<port>=<type># <options>
+> `<username>@<ip address>:<port>=<type># <options>`
 
 Options syntax
 option1=value1&option2=value2&option3=value3 
@@ -45,19 +45,19 @@ Values can not contain comma, ampersand (&) or equals sign (=)!
 
 Only the IP address is mandatory. The plugin will use defaults for all other parameters. 
 Example: 
-> 192.168.1.1
+> `192.168.1.1`
 
 This configuration will use the globally set username and password to connect to 192.168.1.1. It will use ssh and automatically detect the command to be used (if supported by the plugin)
 
 Example:
-> 192.168.1.1:2022#type=routeros&interval=30&user=admin&password Monday
+> `192.168.1.1:2022#type=routeros&interval=30&user=admin&password Monday`
 
 
 In this example the username and password are specific to this tracker. Port 2020 is used instead of the default (22). The routeros tracker module is used instead of ssh autodetection. The poll interval is 30 seconds instead of the globally set poll interval.
 
 
 Backwards compatibility:
-> admin@192.168.1.1=routeros 
+> `admin@192.168.1.1=routeros`
 
 
 Will still work. This was the old style configuration. The new style is preferred, but i put extra effort in maintaining some backward compatibility for (most) existing users. Especially for when this version becomes the master branch and might be installed automatically.
@@ -81,7 +81,7 @@ Be warned: the ssh option can be a powerful tool, but there is no fixed syntax, 
 Opportunity: Turning your specific ssh command into a module might benefit the community!
 
 Tags configuration    
-> <name>=<identifier>#<options>
+> `<name>=<identifier>#<options>`
 
 
 The name is the device name shown in the domoticz user interface and will also be used as unit id.
