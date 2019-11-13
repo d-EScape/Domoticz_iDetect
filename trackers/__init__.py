@@ -1,5 +1,6 @@
 from trackers.ping_tracker import ping_tracker
 from trackers.fake_tracker import fake_tracker
+from trackers.ssh_tracker import ssh_tracker
 from trackers.ssh_autodetect import ssh_autodetect
 from trackers.ssh_autodetect_generic import ssh_autodetect_generic
 from trackers.ssh_brctl import ssh_brctl
@@ -11,6 +12,7 @@ from trackers.ssh_unifi_usg_arp import ssh_unifi_usg_arp
 poll_methods = {
     'default': ssh_autodetect,
     'forcegeneric': ssh_autodetect_generic,
+    'prefab': ssh_tracker,
     'brctl': ssh_brctl,
     'routeros': ssh_routeros,
     'routeros-arp': ssh_routeros_arp,

@@ -24,14 +24,14 @@
 		</ul>
 	</description>
 	<params>
-		<param field="Address" label="Tracker/router Address" width="200px" required="true" default="192.168.0.1"/>
+		<param field="Address" label="Tracker(s)" width="200px" required="true" default="192.168.0.1"/>
 		<param field="Username" label="Username" width="200px" required="true" default=""/>
 		<param field="Password" label="Password" width="200px" required="false" default="" password="true"/>
-		<param field="Mode1" label="Tags to monitor (mac or ip)" width="500px" required="true" default="phone1=A1:B1:01:01:01:01,phone2=C2:D2:02:02:02:02"/>
+		<param field="Mode1" label="Tags to monitor" width="500px" required="true" default="phone1=A1:B1:01:01:01:01,phone2=C2:D2:02:02:02:02"/>
 		<param field="Mode6" label="Remove obsolete" width="250px">
 			<options>
-				<option label="Delete obsolete devices" value="True" default="true"/>
-				<option label="Show obsolete devices as unavailable" value="False"/>
+				<option label="Yes, remove devices" value="True" default="true"/>
+				<option label="No, show as unavailable" value="False"/>
 			</options>
 		</param>
 		<param field="Mode2" label="Poll every" width="75px" required="true" default="10">
@@ -71,12 +71,8 @@
 
 import Domoticz
 from datetime import datetime, timedelta
-import re
-import subprocess
-import threading
-from trackers import poll_methods
 import helpers.data_helper as data_helper
-from override_switch import override_switch
+
 
 class tag_device():
 	#domoticz id is de friendly name
@@ -131,19 +127,13 @@ def get_or_create_unit(friendly_name, unit=None, icon='idetect-unithome'):
 	if not icon in icon_file:
 		Domoticz.Error("Unknown icon requested for " + friendly_name + ": " + icon)
 	try:
-		Domoticz.Status(str(Images))
 		if icon not in Images:
 			Domoticz.Debug("Getting icon requested for " + friendly_name + ": " + icon + " from file:" + icon_file[icon])
 			newimage = Domoticz.Image(Filename=icon_file[icon])
 			newimage.Create()
 			Domoticz.Debug("New image: " + str(newimage))
-			Domoticz.Debug("Icon pepared... now use it")
-		for i in Images:
-			Domoticz.Debug("Existing image id:" + i + " : " + str(Images[i]))
-		Domoticz.Debug("icon name: " + str(icon))
 		if icon in Images:
 			icon_id=Images[icon].ID
-			Domoticz.Debug("Real icon_id to use: " + str(icon_id))
 		else:
 			icon_id=None
 	except:
@@ -198,6 +188,11 @@ class BasePlugin:
 		return
 
 	def onStart(self):
+		import re
+		import subprocess
+		from trackers import poll_methods
+		from override_switch import override_switch
+		
 		#setup debugging if enabled in settings
 		if Parameters["Mode5"]=="True":
 			Domoticz.Debugging(2)
@@ -260,31 +255,38 @@ class BasePlugin:
 
 		#prepare variables and use the remaining parameters from te settings page
 		self.graceoffline = int(Parameters["Mode3"])
-		configured_tag_ids=Parameters["Mode1"].replace(" ", "").split(",")
+		configured_tags=Parameters["Mode1"].split(",")
 		units_in_use=[]
-		for item in configured_tag_ids:
+		for tag_config in configured_tags:
+			tag_config = tag_config.strip()
+			if tag_config.lower().endswith('#ignore'):
+				Domoticz.Status('WARNING! Tag uses old style configuration (see manual): ' + tag_config)
+				old_style_ignore = True
+			else:
+				old_style_ignore = False
 			try:
-				devpart, option = item.split("#")
-				if option.strip().lower() == "ignore":
-					ignore_me = True
-				else:
-					ignore_me = False
+				tag_config, tag_options = tag_config.split("#")
 			except:
-				devpart = item
-				ignore_me = False
+				tag_options = ''
 			try:
-				friendly_name, tag_id = devpart.split("=")
+				friendly_name, tag_id = tag_config.split("=")
 				clean_name = friendly_name.strip()
 				clean_tag_id = tag_id.strip().upper()
 			except:
-				Domoticz.Error("Invalid device/tag_id setting in: " + str(configured_tag_ids))
-			self.tags_to_monitor[clean_tag_id]=tag_device(clean_tag_id, clean_name, ignore_me, self.graceoffline)
+				Domoticz.Error("Invalid device/tag_id setting: " + str(tag_config))		
+			optional = data_helper.options_from_string(tag_options)
+			tag_interval=data_helper.custom_or_default(optional, 'interval', 60)
+			tag_grace=data_helper.custom_or_default(optional, 'grace', self.graceoffline)
+			tag_ignore=data_helper.custom_or_default(optional, 'ignore', old_style_ignore)
+			
+			self.tags_to_monitor[clean_tag_id]=tag_device(clean_tag_id, clean_name, tag_ignore, tag_grace)
 			if data_helper.is_ip_address(clean_tag_id):
 				Domoticz.Debug('Will use local ping to monitor presence for: ' + clean_tag_id)
 				if not 'local pinger' in self.active_trackers:
-					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 30)
+					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 3)
 					self.active_trackers['local pinger'].register_list_interpreter(self.onDataReceive)
-				self.active_trackers['local pinger'].register_tag(clean_tag_id)
+					Domoticz.Status('Tracker activated: Local ping (for the ip address tags you configured)')
+				self.active_trackers['local pinger'].register_tag(clean_tag_id, tag_interval)
 			units_in_use.append(self.tags_to_monitor[clean_tag_id].domoticz_unit)
 			
 		Domoticz.Debug("Monitoring " + str(self.tags_to_monitor) + " for presence.")
@@ -294,31 +296,45 @@ class BasePlugin:
 				if not d in [self.ANYONE_HOME_UNIT, self.OVERRIDE_UNIT]:
 					handle_unused_unit(d, self.deleteobsolete)
 		
-
 		#parse one or multiple tracker ips from settings
 		#Note: the poweroption, username and password are set globally for all trackers!
 		Domoticz.Debug('Tracker configuration:' + str(Parameters["Address"]))
-		trackerips = Parameters["Address"].split("#")[0].strip()
+		trackerips = Parameters["Address"].strip()
 		for tracker in trackerips.split(','):
-			thistracker = tracker.strip()
 			try:
-				host_user, host_config = thistracker.split("@")
+				tracker, my_options = tracker.split('#', 1)
 			except:
-				host_user = self.trackeruser
-				host_config = thistracker
-			try:
-				host_address, host_type = host_config.split("=")
-			except:
-				host_address = host_config
-				host_type = 'default' #default type
-			try:
-				host_ip, host_port_str = host_address.split(":")
-				host_port = int(host_port_str)
-			except:
-				host_ip = host_address
-				host_port = 22				
-			self.active_trackers[host_ip]=poll_methods[host_type](host_ip, host_port, host_user, self.trackerpass, self.keyfile, self.pollinterval)
-			self.active_trackers[host_ip].register_list_interpreter(self.onDataReceive)
+				my_options = ''
+			Domoticz.Debug('tracker:' + tracker)
+			Domoticz.Debug('options:' + my_options)
+			#First get parameters configured using the old style 
+			my_user=data_helper.get_config_part(tracker, before='@', default=self.trackeruser)
+			my_address=data_helper.get_config_part(tracker, after='@', mandatory=True, default='Configuration ERROR!')
+			my_port=data_helper.get_config_part(tracker, after=':', default=22)
+			my_type=data_helper.get_config_part(tracker, after='=', default='default')
+			optional = data_helper.options_from_string(my_options)
+			if 'configuration errors' in optional:
+				Domoticz.Error(my_address + ' SYNTAX ERROR in configuration: ' + my_options)
+				Domoticz.Error('Check documentation on https://github.com/d-EScape/Domoticz_iDetect for correct syntax (it might have changed)')
+			my_interval=data_helper.custom_or_default(optional, 'interval', self.pollinterval)
+			#Then get parameters configured using the old style (also overwriting existing old style)
+			my_user=data_helper.custom_or_default(optional, 'user', my_user)
+			my_port=data_helper.custom_or_default(optional, 'port', my_port)
+			my_type=data_helper.custom_or_default(optional, 'type', my_type)
+			my_password=data_helper.custom_or_default(optional, 'password', self.trackerpass)
+			my_keyfile=data_helper.custom_or_default(optional, 'keyfile', self.keyfile)
+			if 'disabled' in optional and optional['disabled'] == True:
+				Domoticz.Status(my_address + ' WARNING Tracker is disabled in configuration:')
+			else:
+				if 'ssh' in optional:
+					my_type = 'prefab'
+					self.active_trackers[my_address]=poll_methods[my_type](my_address, my_port, my_user, my_password, my_keyfile, my_interval)
+					self.active_trackers[my_address].trackerscript = optional['ssh']
+					self.active_trackers[my_address].is_ready = True
+				else:
+					self.active_trackers[my_address]=poll_methods[my_type](my_address, my_port, my_user, my_password, my_keyfile, my_interval)
+				self.active_trackers[my_address].register_list_interpreter(self.onDataReceive)
+				Domoticz.Status('Tracker activated:' + my_address + ' port ' + str(my_port) + ', user: ' + my_user + ', type: ' + my_type + ' and options: ' + str(optional))
 		Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
 			
 		Domoticz.Debug("Plugin initialization done.")

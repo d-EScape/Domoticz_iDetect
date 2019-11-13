@@ -3,6 +3,8 @@ from datetime import datetime
 
 PATTERN_MAC = r'[a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}'
 PATTERN_IP = r'[a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}' #need pattern for ip
+CONFIG_DELIMITERS = ['@', ':', '=', '#']
+OPTION_DELIMITER = '&'
 
 # def is_mac_address(input):
 # 	match_this = re.compile(PATTERN_MAC)
@@ -61,5 +63,73 @@ def clean_tag_id_list(raw_data, tag_type):
 	clean_list = match_this.findall(str_data)
 	return clean_list
 	
+def guess_type(input):
+	if isinstance(input, str):
+		val = None
+		try:
+			val = int(input)
+		except:
+			if input.lower() == 'true':
+				val = True
+			elif input.lower() == 'false':
+				val = False
+		if val == None:
+			val = input
+		return val
+	else:
+		return input
+
+def custom_or_default(config, field, default):
+	field = field.lower()
+	if field in config:
+		if config[field] != '' and not config[field] is None:
+			return config[field]
+	return default
+	
+def get_config_part(config_str='', after='', before='', mandatory=False, default=None):
+	if config_str == '':
+		return None
+	config_str = config_str.strip()
+	if after != '':
+		if after in config_str or mandatory:
+			split_after = config_str.split(after, 1)[-1]
+			for d in CONFIG_DELIMITERS:
+				split_after = split_after.split(d, 1)[0]
+			config_str = split_after.strip()
+		else:
+			config_str = ''
+	if before != '':
+		if before in config_str:
+			split_before = config_str.split(before, 1)[0]
+			for d in CONFIG_DELIMITERS:
+				split_before = split_before.split(d, 1)[-1]
+			config_str = split_before.strip()
+		else:
+			config_str = ''
+	if config_str != '' and not config_str is None :
+		return guess_type(config_str)
+	return default
+	
+	
+def options_from_string(input):
+	if input is None or input.strip() == '':
+		return {}
+	illegal = 0
+	seperate = input.strip().split('&')
+	option_dict = {}
+	for item in seperate:
+		try:
+			option, value_str = item.split('=', 1)
+		except:
+			illegal = illegal + 1 
+			break
+		option=option.lower()
+		option_dict[option]=guess_type(value_str)
+	if illegal > 0:
+		option_dict['configuration errors']=illegal
+	return option_dict
+		
+				
+			
 
 	
