@@ -1,6 +1,8 @@
 import Domoticz
 import subprocess
+import helpers.data_helper as data_helper
 from trackers.tracker_base import tracker
+import helpers.data_helper as data_helper
 from datetime import datetime, timedelta
 from time import sleep
 
@@ -12,7 +14,7 @@ class ssh_tracker(tracker):
 		Domoticz.Debug(self.tracker_ip + ' Tracker is of the ssh kind')
 		
 	def poll_present_tag_ids(self):
-		Domoticz.Debug(self.tracker_ip + ' Start pollling and return results to ' + str(self.receiver_callback))
+		Domoticz.Debug(self.tracker_ip + ' Start poll and return results to ' + str(self.receiver_callback))
 		success, raw_data = self.getfromssh(self.trackerscript)
 		if not success:
 			 self.error_count = self.error_count + 1
@@ -20,9 +22,9 @@ class ssh_tracker(tracker):
 			 return
 		self.error_count = 0
 		self.receiver_callback(raw_data)
-
+		
 	def prepare_for_polling(self):
-		Domoticz.Debug(self.tracker_ip + ' Has no prepare_for_pollling function')
+		Domoticz.Debug(self.tracker_ip + ' Has no prepare_for_pollling method')
 		return True
 				
 	def getfromssh(self, tracker_cli, alltimeout=5, sshtimeout=3):
@@ -58,6 +60,8 @@ class ssh_tracker(tracker):
 				Domoticz.Error(self.tracker_ip + " Tracker returned empty response.")
 				success = False
 				output = "<Empty reponse>"
+			else:
+				output = output.decode("utf-8")
 		timespend=datetime.now()-starttime
 		Domoticz.Debug(self.tracker_ip + " SSH session took " + str(timespend.microseconds//1000) + " milliseconds.")
 		return success, output

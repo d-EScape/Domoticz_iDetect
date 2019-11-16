@@ -148,9 +148,9 @@ def get_or_create_unit(friendly_name, unit=None, icon='idetect-unithome'):
 		new_unit = unit
 	try:
 		Domoticz.Device(Name=friendly_name, Unit=new_unit, DeviceID=friendly_name, TypeName="Switch", Used=1, Image=icon_id).Create()
-		Domoticz.Log("Created device for " + friendly_name + " with unit id " + str(new_unit))
+		Domoticz.Status("Created device for " + friendly_name + " with unit id " + str(new_unit))
 	except:
-		Domoticz.Log("FAILED to create device for " + friendly_name + " with unit id " + str(new_unit))
+		Domoticz.Error("FAILED to create device for " + friendly_name + " with unit id " + str(new_unit))
 		new_unit = None
 	return new_unit
 	

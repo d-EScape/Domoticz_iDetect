@@ -2,18 +2,10 @@ import re
 from datetime import datetime
 
 PATTERN_MAC = r'[a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}'
-PATTERN_IP = r'[a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}' #need pattern for ip
+PATTERN_IP = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
 CONFIG_DELIMITERS = ['@', ':', '=', '#']
 OPTION_DELIMITER = '&'
 
-# def is_mac_address(input):
-# 	match_this = re.compile(PATTERN_MAC)
-# 	result = match_this.match(input)
-# 	if result not is None:
-# 		return True
-# 	else:
-# 		return False
-	
 def is_mac_address(input):
 	segments = input.split(":")
 	if len(segments) != 6:
@@ -45,22 +37,29 @@ def is_ip_address(input):
 def time_since_last(past_moment):
 	number_of_seconds = (datetime.now() - past_moment).total_seconds()
 	return number_of_seconds
+	
+def mac_from_data(raw_data):
+	match_this = re.compile(PATTERN_MAC)
+	found_this = match_this.findall(raw_data)
+	return found_this
+	
+def ip_from_data(raw_data):
+	match_this = re.compile(PATTERN_IP)
+	found_this = match_this.findall(raw_data)
+	return found_this
 
 def clean_tag_id_list(raw_data, tag_type):
 	if isinstance(raw_data, list):
 		clean_list = [x.upper() for x in raw_data]
 		return clean_list
-	if isinstance(raw_data, bytes):
-		str_data = raw_data.decode("utf-8").upper()
-	elif isinstance(raw_data, str):
-		str_data = raw_data.upper()
+	raw_data = raw_data.upper()
 	if tag_type == 'mac_address':
 		match_this = re.compile(PATTERN_MAC)
 	elif tag_type == 'ip_address':
 		match_this = re.compile(PATTERN_IP)
 	else:
-		Domoticz.Error('Undefined tag_type for data: ' + str_data)
-	clean_list = match_this.findall(str_data)
+		Domoticz.Error('Undefined tag_type for data: ' + raw_data)
+	clean_list = match_this.findall(raw_data)
 	return clean_list
 	
 def guess_type(input):
@@ -109,7 +108,6 @@ def get_config_part(config_str='', after='', before='', mandatory=False, default
 	if config_str != '' and not config_str is None :
 		return guess_type(config_str)
 	return default
-	
 	
 def options_from_string(input):
 	if input is None or input.strip() == '':
