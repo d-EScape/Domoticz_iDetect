@@ -3,31 +3,42 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect Wifi presence detection" author="ESCape" version="2.0">
+<plugin key="idetect" name="iDetect multifunctional presence detection" author="ESCape" version="2.0" externallink="https://github.com/d-EScape/Domoticz_iDetect">
 	<description>
-		<h2>Presence detection by router</h2><br/>
+		<h2>Presence detection by router, ping or other trackers</h2><br/>
 		<h3>Authentication settings</h3>
 		<ul style="list-style-type:square">
-			<li>You can monitor multiple routers by separating their ip addresses with a comma. If you monitor more than one router the username for all of them will default to the value entered in password field, or you can specify a router specific username by naming the router username@routerip (eg admin@192.168.1.1)</li>
-			<li>Leave the password field empty to use ssh public key authentication.</li>
-			<li>SSH key authentication must be configured on every router and on the OS (linux) using ~/.ssh/id_rsa.pub for the user running domoticz.</li>
-			<li>If you enter a password in the password field, then the plugin can use password authentication. Make sure you have installed sshpass (sudo apt-get install sshpass). This is much easier than key authentication, but less secure. Your password wil be stored in the Domoticz database in plain text.</li>
+			<li>'Trackers' are devices that can track the presence of 'tags'.For instance: A WiFi device is a type of tag that can be tracked by a WiFi router.</li>
+			<li>You can monitor multiple trackers by separating their addresses with a comma. If you don't specify a username, password or other tracker specific setting, then the username and password fields on this page will be used</li>
+			<li>Key based authentication will be used if it has been set on the operating system level for the user profile that is running Domotica (root by default) and on the tracker(s).</li>
+			<li>For instructions on how to configure iDetect see the github page. Here are some examples.</li>
 		</ul>
-		<h3>Behaviour settings</h3>
+			<h4>Example tags:</h4>
+			<div style="width:700px; padding: .2em;" class="text ui-widget-content ui-corner-all">phone1=11:22:33:44:55:66, phone2=1A:2B:3C:4D:5E:6F, nas=192.168.19.100#interval=10&amp;ignore=true</div>
+			<p>The phones in this example will be tracked by their MAC address. The device called 'nas' will pe pinged every 10 seconds but it's presence will be ignored for the 'Anyone home' status.</p>
+			<h4>Example trackers:</h4>
+			<div style="width:700px; padding: .2em;" class="text ui-widget-content ui-corner-all">192.168.1.1, 192.168.1.55#user=admin&amp;password=mysecret&amp;interval=10</div>
+			<p>The first tracker will use default settings and the second own has its own credentials and poll interval set.
+			There are many more settings, like tracker types, commands to use etcetera.</p>
+		<h3>Behavior settings</h3>
 		<ul style="list-style-type:square">
-			<li>Enter mac addresses to monitor in the format phone1=F1:2A:33:44:55:66,phone2=B9:88:77:C6:55:44 (and more, separated by comma).
-			The name should be short and descriptive. It  will be used as the identifying deviceID and the initial device name. You can change the devices name after it has been created.</li>
-			<li>'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of mac-addresses OR to show them as timedout.</li>
-			<li>The grace period should be a multitude of the poll interval in seconds. It controls after how long phones are shown as absent (confirmation from several polls to deal with temporarily dropped connections). Example of a working but illogical configuration: if the grace period is 20 seconds, but the poll interval is 30 seconds it might still take up to a minute to confirm absence (2 poll cycles)</li>
-			<li>The override button will let the 'Anyone home' device think there is someone home, even if no presence is detected. This can be helpfull for visitors or to take some control over the 'Anyone home' status from other scripts.</li>
-			<li>The plugin will automatically determine which command to use on the router for which wireless interfaces. If your router (chipset) is not supported you can experiment how to get the right info from the router and post that info on the forum. I might be able to add support to the plugin.</li>
+			<li>'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of tags OR to show them as timed-out.</li>
+			<li>The grace period should be a multitude of the poll interval in seconds. It controls after how long phones are shown as absent (confirmation from several polls to deal with temporarily dropped connections).</li>
+			<li>The override button will let the 'Anyone home' device think there is someone home, even if no presence is detected. This can be helpful for visitors or to take some control over the 'Anyone home' status from other scripts.</li>
+			<li>The plugin will automatically determine which command to use it the tracker is a router with a supported wireless interface that can be queried through ssh. If your router (chipset) is not supported you can experiment how to get the right info from the router (or other tracker) and post that info on the forum. 
+			Make&Model specific commands can be added to the plugin, but i don't own or know every model, so someone has to provide a working ssh command or other method of getting a list of present tags from a tracker.</li>
 		</ul>
+		<h3>Is my tracker supported?</h3>
+		If it supports ssh, then it is probably supported out-of-the box. Some routers support ssh but have a proprietary command set. If your router is not yet supported and you can figure out which command to use
+		it can be easily added to the plugin. Since version 2.0 also other types of trackers can be added to the plugin, like getting pressent MAC addresses from a html page or some type of api. I cannot develop/test 
+		a tracker for devices i don't have acces to, so adding proprietary methods depends on the community (you?), to provide working/tested code or better yet a pull request on github. The (python) code needs to query
+		the tracker for connected devices, including everything that is needed to connect and login to the tracker. It might be a simple curl command.
 	</description>
 	<params>
-		<param field="Address" label="Tracker(s)" width="200px" required="true" default="192.168.0.1"/>
+		<param field="Address" label="Tracker(s)" width="900px" required="true" default="192.168.0.1"/>
 		<param field="Username" label="Username" width="200px" required="true" default=""/>
 		<param field="Password" label="Password" width="200px" required="false" default="" password="true"/>
-		<param field="Mode1" label="Tags to monitor" width="500px" required="true" default="phone1=A1:B1:01:01:01:01,phone2=C2:D2:02:02:02:02"/>
+		<param field="Mode1" label="Tags to monitor" width="900px" required="true" default="phone1=A1:B1:01:01:01:01,phone2=C2:D2:02:02:02:02"/>
 		<param field="Mode6" label="Remove obsolete" width="250px">
 			<options>
 				<option label="Yes, remove devices" value="True" default="true"/>
@@ -73,7 +84,9 @@ import Domoticz
 from datetime import datetime, timedelta
 import helpers.data_helper as data_helper
 
-
+#
+# This class needs to be in plugin.py to interact with (Domoticz) Devices
+#
 class tag_device():
 	#domoticz id is de friendly name
 	def __init__(self, tag_id, friendly_name, ignore_for_anyonehome=False, grace_period=0):
@@ -107,7 +120,9 @@ class tag_device():
 				self.present = False
 				Domoticz.Debug(self.friendly_name + ' has not been seen for ' + str(seconds_ago) + 'seconds --> set as absent.')
 
-
+#
+# Some other Domoticz functions used by the BasePlugin
+#
 def find_available_unit():
 	for num in range(2,200):
 		if num not in Devices:
@@ -188,6 +203,7 @@ class BasePlugin:
 		return
 
 	def onStart(self):
+		import sys
 		import re
 		import subprocess
 		from trackers import poll_methods
@@ -210,14 +226,8 @@ class BasePlugin:
 		self.ANYONE_HOME_UNIT = 1
 		self.OVERRIDE_UNIT = 255
 
-		#check some (OS) requirements
-		if onwindows():
-			Domoticz.Debug('Running on Windows')
-			Domoticz.Error('The plugin does not work on windows for reasons unknow. Hearbeat code is not executed. If you can offer any help fixing this please let me know on forumthread')
-		else:
-			Domoticz.Debug('Not running on Windows')
-
 		if self.debug:
+			Domoticz.Debug('Operation system is: ' + sys.platform)
 			try:
 				osuser=subprocess.check_output("whoami", timeout=1)
 				runasuser = osuser.decode("utf-8").strip()
@@ -260,7 +270,7 @@ class BasePlugin:
 		for tag_config in configured_tags:
 			tag_config = tag_config.strip()
 			if tag_config.lower().endswith('#ignore'):
-				Domoticz.Status('WARNING! Tag uses old style configuration (see manual): ' + tag_config)
+				Domoticz.Error('WARNING! Tag uses depricated configuration syntax but might work for now (see manual): ' + tag_config)
 				old_style_ignore = True
 			else:
 				old_style_ignore = False
@@ -283,7 +293,7 @@ class BasePlugin:
 			if data_helper.is_ip_address(clean_tag_id):
 				Domoticz.Debug('Will use local ping to monitor presence for: ' + clean_tag_id)
 				if not 'local pinger' in self.active_trackers:
-					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 3)
+					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 30)
 					self.active_trackers['local pinger'].register_list_interpreter(self.onDataReceive)
 					Domoticz.Status('Tracker activated: Local ping (for the ip address tags you configured)')
 				self.active_trackers['local pinger'].register_tag(clean_tag_id, tag_interval)
@@ -307,7 +317,9 @@ class BasePlugin:
 				my_options = ''
 			Domoticz.Debug('tracker:' + tracker)
 			Domoticz.Debug('options:' + my_options)
-			#First get parameters configured using the old style 
+			#First get parameters configured using the old style
+			if any(e in tracker for e in '=@:') or (my_options != '' and not '=' in my_options):
+				Domoticz.Error('WARNING! Tracker uses depricated configuration syntax but will work ... for now (see manual): ' + tracker)	
 			my_user=data_helper.get_config_part(tracker, before='@', default=self.trackeruser)
 			my_address=data_helper.get_config_part(tracker, after='@', mandatory=True, default='Configuration ERROR!')
 			my_port=data_helper.get_config_part(tracker, after=':', default=22)
@@ -317,7 +329,7 @@ class BasePlugin:
 				Domoticz.Error(my_address + ' SYNTAX ERROR in configuration: ' + my_options)
 				Domoticz.Error('Check documentation on https://github.com/d-EScape/Domoticz_iDetect for correct syntax (it might have changed)')
 			my_interval=data_helper.custom_or_default(optional, 'interval', self.pollinterval)
-			#Then get parameters configured using the old style (also overwriting existing old style)
+			#Then get parameters configured using the new style (overwriting existing old style)
 			my_user=data_helper.custom_or_default(optional, 'user', my_user)
 			my_port=data_helper.custom_or_default(optional, 'port', my_port)
 			my_type=data_helper.custom_or_default(optional, 'type', my_type)
@@ -338,13 +350,20 @@ class BasePlugin:
 		Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
 			
 		Domoticz.Debug("Plugin initialization done.")
-		Domoticz.Heartbeat(4)
+		Domoticz.Heartbeat(10)
 			
 	def onDataReceive(self, source):
 		Domoticz.Debug('Inbound data from: ' + str(source.tracker_ip) + ' containing ' + str(source.found_tag_ids))
 		for seen in source.found_tag_ids:
 			if seen in self.tags_to_monitor:
 				self.tags_to_monitor[seen].i_see_you()
+		self.manage_presence()
+
+	def manage_presence(self):
+		if self.override.has_expired(self.present_count > 0):
+			Domoticz.Status('Override has ended')
+			self.override.set_inactive()
+			update_domoticz_status(self.OVERRIDE_UNIT, False)
 		self.present_count = 0
 		for d in self.tags_to_monitor:
 			self.tags_to_monitor[d].check_if_seen()
@@ -363,15 +382,18 @@ class BasePlugin:
 
 	def onHeartbeat(self):
 		Domoticz.Debug('onHeartbeat called')
+		# Send a heartbeat to the (base)tracker in case a tracker needs a pulse
+		# not needed for poll timing, but might be useful when developing custom trackers
 		for r in self.active_trackers:
 			self.active_trackers[r].heartbeat_handler()
-		if self.override.has_expired(self.present_count > 0):
-			Domoticz.Status('Override has ended')
-			self.override.set_inactive()
-			update_domoticz_status(self.OVERRIDE_UNIT, False)
+		# Presence is also managed when data is received from a tracker, but we need to make
+		# sure it runs every once in a while even if the tracker intervals are long
+		self.manage_presence()
+
 
 	def onCommand(self, Unit, Command, Level, Hue):
-		#only allow the override switch to be operated from gui and only if overrides are enabled
+		#only allow the override switch to be operated from Domoticz ui and only if overrides are enabled
+		#other switches cannot be operated from the Domoticz ui. They are controlled by the plugin
 		if Unit == self.OVERRIDE_UNIT:
 			if str(Command)=='On':
 				if self.override.allow:
@@ -388,8 +410,8 @@ class BasePlugin:
 		
 	def onStop(self):
 		Domoticz.Debug('onStop called')
-#		for r in self.active_trackers:
-#			self.active_trackers[r].stop_now()
+		for r in self.active_trackers:
+			self.active_trackers[r].stop_now()
 
 global _plugin
 _plugin = BasePlugin()
@@ -419,25 +441,6 @@ def oscmdexists(cmd):
 		return False
 	Domoticz.Debug("Checking if [" + cmd + "] will run: OK")
 	return True
-
-#Check if the plugin (and Domoticz) is running on Windows
-def onwindows():
-	if str(Parameters['HomeFolder'])[1:3] == ":\\":
-		return True
-	else:
-		return False
-
-#Workaround for the buggy datetime.strptime()
-#strptime will only work once and then trow exceptions (seems to be known bug)
-def timestampfromstring(input):
-	#format is "%Y-%m-%d %H:%M:%S"
-	if len(input) == 19:
-		try:
-			thistimestamp=datetime(int(input[:4]),int(input[5:7]),int(input[8:10]),int(input[11:13]),int(input[14:16]),int(input[17:19]))
-			return thistimestamp
-		except:
-			Domoticz.Error("Could not parse datetime string " + input + ". Returning the current instead of time of last update.")
-	return datetime.now()
 
 def DumpConfigToLog():
 	for x in Parameters:

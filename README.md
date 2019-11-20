@@ -1,6 +1,6 @@
 # Domoticz_iDetect BETA 2.0
 
-iDectect 2.0 .. the modular and highly tweakable edition
+iDectect 2.0 .. the modular and highly tweakable version that also runs on Windows
 
 This version is a work in progress (as is this documentation) en must be considered a beta. Bugs are to be expected! Please leave some feedback on the domoticz forum. This will help me to improve functionality and squash those pesky bugs.
 The forum can be found at at https://www.domoticz.com/forum/viewtopic.php?f=65&t=20467.
@@ -20,6 +20,7 @@ First off… the labels on some configuration fields have changed, without reall
 I think these names better reflect their function, since other devices than routers can now track tags and tags are not necessarily MAC addresses.
 
 New features
+* Support for Windows! 
 * The (now) modular plugin offers the possibility to build (and share!) your own ways of detecting presence, while still using the functionality of this plugin (like override, anyone home etc.)
 * Other types of tags can be build into the plugin. Right now mac-addresses and ip-addresses (will ping) work. Not interchangeable though!
 * Several parameters, like poll interval, password and keyfile can now be configured on a per tracker basis (using advanced options described below)
@@ -90,13 +91,6 @@ grace=number of seconds after a last confirmation of presence that a device is a
 
 A tag will still accept #ignore as a single(!) option (so without the =true part), again to maintain backward compatibility.
 
-
-Limitations
-Although you can theoretically set a poll interval or grace offline period to anything, even a second or 0 seconds, those speeds will not work as expected. The heartbeat of the plugin runs every 4 seconds, so nothing will be faster than that. It should not really matter because such low interval values are not really practical.
-Also bare in mind that the ping tracker will start a separate ping process for every tag. That might become a problem with a lot of ip’s to ping. So I set the hard coded ping interval to 60 seconds and would advice you to set higher intervals per tag where possible. Only lower intervals where needed.
-
-
 Extra’s
-
 
 I included a ‘dummy’ module. If you specify a tracker like 192.168.1.1#type=dummy , then nothing is actually polled, but a (hard coded) list of Mac addresses is returned to the plugin on every interval. Can be useful for testing.

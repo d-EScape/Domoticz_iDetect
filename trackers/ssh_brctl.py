@@ -7,6 +7,5 @@ class ssh_brctl(ssh_tracker):
 		self.prepare_for_polling()
 
 	def prepare_for_polling(self):
-		functional_part = tracker_cli_helper.generic_methods['brctl']
-		self.trackerscript = tracker_cli_helper.wrap_command(functional_part)
+		self.trackerscript = "brctl showmacs br0"
 		self.is_ready = True

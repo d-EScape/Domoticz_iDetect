@@ -7,6 +7,5 @@ class ssh_unifi_usg_arp(ssh_tracker):
 		self.prepare_for_polling()
 
 	def prepare_for_polling(self):
-		functional_part = "ishow arp"
-		self.trackerscript = tracker_cli_helper.wrap_command(functional_part)
+		self.trackerscript = "ishow arp"
 		self.is_ready = True

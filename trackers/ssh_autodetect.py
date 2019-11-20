@@ -33,7 +33,7 @@ class ssh_autodetect(ssh_tracker):
 			Domoticz.Debug(self.tracker_ip + ' FAILED: No suitable polling command found on this tracker!')
 			self.is_ready = False
 			return
-		self.trackerscript = build_script
+		self.trackerscript = tracker_cli_helper.wrap_command(build_script)
 		Domoticz.Debug(self.tracker_ip + ' Prepared to poll using: ' + self.trackerscript)
 		self.is_ready = True
 		
