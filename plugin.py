@@ -285,7 +285,7 @@ class BasePlugin:
 			except:
 				Domoticz.Error("Invalid device/tag_id setting: " + str(tag_config))		
 			optional = data_helper.options_from_string(tag_options)
-			tag_interval=data_helper.custom_or_default(optional, 'interval', 60)
+			tag_interval=data_helper.custom_or_default(optional, 'interval', self.pollinterval)
 			tag_grace=data_helper.custom_or_default(optional, 'grace', self.graceoffline)
 			tag_ignore=data_helper.custom_or_default(optional, 'ignore', old_style_ignore)
 			

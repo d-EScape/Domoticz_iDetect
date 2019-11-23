@@ -96,6 +96,8 @@ class ssh_tracker(tracker):
 			ssh_error = stderr.read().decode("utf-8")
 			if ssh_error != '':
 				Domoticz.Error(self.tracker_ip + ' ====> SSH returned error:' + str(ssh_error))
+			if ssh_output == '':
+				Domoticz.Error(self.tracker_ip + ' ====> SSH returned empty response. Transport active: ' + str(self.my_transport.is_active()))
 			Domoticz.Debug(self.tracker_ip + ' ====> SSH returned (decoded):' + ssh_output)
 		except Exception as e:
 			Domoticz.Error(self.tracker_ip + ' ====> SSH failed with exception: ' + str(e))
