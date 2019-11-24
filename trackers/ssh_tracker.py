@@ -56,21 +56,21 @@ class ssh_tracker(tracker):
 					Domoticz.Error(self.tracker_ip + ' ====> SSH Could not get RSA from private key. Exception: ' + str(e))
 				Domoticz.Debug(self.tracker_ip + ' ====> SSH using key: ' + str(my_key_file))
 				try:
-					self.client.connect(self.tracker_ip, username=self.tracker_user, pkey=rsa_key)
+					self.client.connect(self.tracker_ip, username=self.tracker_user, pkey=rsa_key, timeout=5)
 				except Exception as e:
 					Domoticz.Error(self.tracker_ip + ' SSH Could not connect (using custom key file). Exception: ' + str(e))
 					self.connected = False
 					return
 			else:
 				try:
-					self.client.connect(self.tracker_ip, username=self.tracker_user)
+					self.client.connect(self.tracker_ip, username=self.tracker_user, timeout=5)
 				except Exception as e:
 					Domoticz.Error(self.tracker_ip + ' SSH Could not connect (with os key). Exception: ' + str(e))
 					self.connected = False
 					return	
 		else:
 			try:
-				self.client.connect(self.tracker_ip, username=self.tracker_user, password=self.tracker_password)
+				self.client.connect(self.tracker_ip, username=self.tracker_user, password=self.tracker_password, timeout=5)
 			except Exception as e:
 				Domoticz.Error(self.tracker_ip + ' ====> SSH Could not connect (using password). Exception: ' + str(e))
 				self.connected = False
@@ -91,7 +91,7 @@ class ssh_tracker(tracker):
 			Domoticz.Debug(self.tracker_ip + ' ====> SSH not connected ... connecting')
 			self.ssh_connect()
 		try:
-			stdin, stdout, stderr = self.client.exec_command(tracker_cli)
+			stdin, stdout, stderr = self.client.exec_command(tracker_cli, timeout=5)
 			ssh_output = stdout.read().decode("utf-8")
 			ssh_error = stderr.read().decode("utf-8")
 			if ssh_error != '':
