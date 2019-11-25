@@ -28,10 +28,7 @@ class tracker():
 		# don't need heartbeat when using threading timers
 		# run some extra checks for beta debugging
 		if self.poll_timer is None:
-			Domoticz.Error(self.tracker_ip + ' Has no poll timer')
-			return
-		if not self.poll_timer.is_alive():
-			Domoticz.Error(self.tracker_ip + ' Timer exists but NOT alive')
+			Domoticz.Debug(self.tracker_ip + ' Does not seem to have a poll timer')
 		return
 			
 	def poll_present_tag_ids(self):

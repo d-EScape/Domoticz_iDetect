@@ -95,16 +95,17 @@ class ssh_tracker(tracker):
 			ssh_output = stdout.read().decode("utf-8")
 			ssh_error = stderr.read().decode("utf-8")
 			if ssh_error != '':
-				Domoticz.Error(self.tracker_ip + ' ====> SSH returned error:' + str(ssh_error))
+				Domoticz.Error(self.tracker_ip + ' ====> SSH returned error:' + ssh_error)
 			if ssh_output == '':
 				Domoticz.Error(self.tracker_ip + ' ====> SSH returned empty response. Transport active: ' + str(self.my_transport.is_active()))
 			Domoticz.Debug(self.tracker_ip + ' ====> SSH returned (decoded):' + ssh_output)
 		except Exception as e:
 			Domoticz.Error(self.tracker_ip + ' ====> SSH failed with exception: ' + str(e))
 			try:
-				self.disconnect()
+				self.client.close()
+				Domoticz.Status(self.tracker_ip + ' ====> SSH resetting connection')
 			except:
-				Domoticz.Debug(self.tracker_ip + ' ====> SSH disconnect failed')
+				Domoticz.Debug(self.tracker_ip + ' ====> SSH connection reset failed')
 			self.connected = False
 			return False, ''
 		timespend=datetime.now()-starttime
