@@ -171,8 +171,10 @@ def get_or_create_unit(friendly_name, unit=None, icon='idetect-unithome'):
 	
 def handle_unused_unit(unit, remove_it=False):
 	if remove_it:
+		Domoticz.Status("Tag " + Devices[unit].Name + " no longer monitored --> removed")
 		Devices[unit].Delete()
 	else:
+		Domoticz.Status("Tag  " + Devices[unit].Name + " no longer monitored --> marked as timed-out")
 		Devices[unit].Update(nValue=0, sValue='Off', TimedOut=1)
 		
 def get_domoticz_status(unit):
@@ -200,6 +202,7 @@ def update_domoticz_status(unit, status):
 class BasePlugin:
 
 	def __init__(self):
+		self.plugin_ready = False
 		return
 
 	def onStart(self):
@@ -301,10 +304,14 @@ class BasePlugin:
 			
 		Domoticz.Debug("Monitoring " + str(self.tags_to_monitor) + " for presence.")
 		self.deleteobsolete = Parameters["Mode6"] == "True"
+		
+		obsolete_units = []
 		for d in Devices:
 			if not d in units_in_use:
 				if not d in [self.ANYONE_HOME_UNIT, self.OVERRIDE_UNIT]:
-					handle_unused_unit(d, self.deleteobsolete)
+					obsolete_units.append(d)
+		for obs_unit in obsolete_units:
+			handle_unused_unit(obs_unit, self.deleteobsolete)
 		
 		#parse one or multiple tracker ips from settings
 		#Note: the poweroption, username and password are set globally for all trackers!
@@ -350,6 +357,7 @@ class BasePlugin:
 		Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
 			
 		Domoticz.Debug("Plugin initialization done.")
+		self.plugin_ready = True
 		Domoticz.Heartbeat(10)
 			
 	def onDataReceive(self, source):
@@ -384,12 +392,14 @@ class BasePlugin:
 		Domoticz.Debug('onHeartbeat called')
 		# Send a heartbeat to the (base)tracker in case a tracker needs a pulse
 		# not needed for poll timing, but might be useful when developing custom trackers
-		for r in self.active_trackers:
-			self.active_trackers[r].heartbeat_handler()
-		# Presence is also managed when data is received from a tracker, but we need to make
-		# sure it runs every once in a while even if the tracker intervals are long
-		self.manage_presence()
-
+		if self.plugin_ready:
+			for r in self.active_trackers:
+				self.active_trackers[r].heartbeat_handler()
+			# Presence is also managed when data is received from a tracker, but we need to make
+			# sure it runs every once in a while even if the tracker intervals are long
+			self.manage_presence()
+		else:
+			Domoticz.Status('Skip this hearbeat ... system is still preparing')
 
 	def onCommand(self, Unit, Command, Level, Hue):
 		#only allow the override switch to be operated from Domoticz ui and only if overrides are enabled

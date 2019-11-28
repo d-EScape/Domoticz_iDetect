@@ -67,20 +67,23 @@ class ssh_tracker(tracker):
 				except Exception as e:
 					Domoticz.Error(self.tracker_ip + ' SSH Could not connect (with os key). Exception: ' + str(e))
 					self.connected = False
-					return	
+					return False	
 		else:
 			try:
 				self.client.connect(self.tracker_ip, username=self.tracker_user, password=self.tracker_password, timeout=5)
 			except Exception as e:
 				Domoticz.Error(self.tracker_ip + ' ====> SSH Could not connect (using password). Exception: ' + str(e))
 				self.connected = False
-				return
+				return False
 		try:
 			self.my_transport = self.client.get_transport()
 			Domoticz.Status(self.tracker_ip + ' ====> SSH connection established')
 		except:
 			Domoticz.Error(self.tracker_ip + ' ====> SSH connection failed (no transport)')
+			self.connected = False
+			return False
 		self.connected = True
+		return True
 			
 	def getfromssh(self, tracker_cli, alltimeout=5, sshtimeout=3):
 		if NOPARAMIKO:
@@ -90,6 +93,8 @@ class ssh_tracker(tracker):
 		if not self.connected:
 			Domoticz.Debug(self.tracker_ip + ' ====> SSH not connected ... connecting')
 			self.ssh_connect()
+		if not self.connected:
+			return False, ''
 		try:
 			stdin, stdout, stderr = self.client.exec_command(tracker_cli, timeout=5)
 			ssh_output = stdout.read().decode("utf-8")
