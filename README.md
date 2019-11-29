@@ -26,6 +26,10 @@ New features
 * Several parameters, like poll interval, password and keyfile can now be configured on a per tracker basis (using advanced options described below)
 * Tags can also be configured individually
 
+(New) **requirements**
+* the python module 'paramiko' needs to be installed (sudo pip3 install paramiko)
+* Python 3.5 or newer
+
 Configuration syntax
 There are several ways to configure some settings, but only one value will be used. Priority is taken by (high to low):
 * New style configuration 

@@ -26,7 +26,7 @@
 			<li>The grace period should be a multitude of the poll interval in seconds. It controls after how long phones are shown as absent (confirmation from several polls to deal with temporarily dropped connections).</li>
 			<li>The override button will let the 'Anyone home' device think there is someone home, even if no presence is detected. This can be helpful for visitors or to take some control over the 'Anyone home' status from other scripts.</li>
 			<li>The plugin will automatically determine which command to use if the tracker is a router with a supported wireless interface that can be queried through ssh. If your router (chipset) is not supported you can experiment how to get the right info from the router (or other tracker) and post that info on the forum. 
-			Make &amp Model specific commands can be added to the plugin, but i don't own or know every model, so someone has to provide a working ssh command or other method of getting a list of present tags from a tracker.</li>
+			Make &amp; Model specific commands can be added to the plugin, but i don't own or know every model, so someone has to provide a working ssh command or other method of getting a list of present tags from a tracker.</li>
 		</ul>
 		<h3>Is my tracker supported?</h3>
 		If it supports ssh, then it is probably supported out-of-the box. Some routers support ssh but have a proprietary command set. If your router is not yet supported and you can figure out which command to use
