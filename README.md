@@ -60,7 +60,7 @@ Will still work. This was the old style configuration. The new style is preferre
 
 Valid options for trackers are:   
 port=Port number   
-type=module to use   
+type=tracker module to use (see `__init__.py` in the tacker directory for supported tracker types)   
 user=user name on the tracker (for ssh the ssh username)   
 password=    
 keyfile=keyfile to use for this tracker (only relevant for ssh)    
