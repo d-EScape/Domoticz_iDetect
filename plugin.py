@@ -8,30 +8,30 @@
 		<h2>Presence detection by router, ping or other trackers</h2><br/>
 		<h3>Authentication settings</h3>
 		<ul style="list-style-type:square">
-			<li>'Trackers' are devices that can track the presence of 'tags'.For instance: A WiFi device is a type of tag that can be tracked by a WiFi router.</li>
+			<li>'Trackers' are devices that can track the presence of 'tags'. For instance: A WiFi device is a type of tag that can be tracked by a WiFi router.</li>
 			<li>You can monitor multiple trackers by separating their addresses with a comma. If you don't specify a username, password or other tracker specific setting, then the username and password fields on this page will be used</li>
-			<li>Key based authentication will be used if it has been set on the operating system level for the user profile that is running Domotica (root by default) and on the tracker(s).</li>
+			<li>Key based authentication will be used if it has been set on the operating system level for the user profile that is running Domoticz (root by default) and on the tracker(s).</li>
 			<li>For instructions on how to configure iDetect see the github page. Here are some examples.</li>
 		</ul>
 			<h4>Example tags:</h4>
-			<div style="width:700px; padding: .2em;" class="text ui-widget-content ui-corner-all">phone1=11:22:33:44:55:66, phone2=1A:2B:3C:4D:5E:6F, nas=192.168.19.100#interval=10&amp;ignore=true</div>
-			<p>The phones in this example will be tracked by their MAC address. The device called 'nas' will pe pinged every 10 seconds but it's presence will be ignored for the 'Anyone home' status.</p>
+			<div style="width:700px; padding: .2em;" class="text ui-widget-content ui-corner-all">phone1=11:22:33:44:55:66, phone2=1A:2B:3C:4D:5E:6F, nas=192.168.1.100#interval=10&amp;ignore=true</div>
+			<p>The phones in this example will be tracked by their MAC address. The device called 'nas' will be pinged every 10 seconds but it's presence will be ignored for the 'Anyone home' status.</p>
 			<h4>Example trackers:</h4>
 			<div style="width:700px; padding: .2em;" class="text ui-widget-content ui-corner-all">192.168.1.1, 192.168.1.55#user=admin&amp;password=mysecret&amp;interval=10</div>
-			<p>The first tracker will use default settings and the second own has its own credentials and poll interval set.
+			<p>The first tracker will use default settings and the second one has its own credentials and poll interval set.
 			There are many more settings, like tracker types, commands to use etcetera.</p>
-		<h3>Behavior settings</h3>
+		<h3>Behaviour settings</h3>
 		<ul style="list-style-type:square">
 			<li>'remove obsolete' gives you a choice to automatically delete devices that are no longer in de above list of tags OR to show them as timed-out.</li>
 			<li>The grace period should be a multitude of the poll interval in seconds. It controls after how long phones are shown as absent (confirmation from several polls to deal with temporarily dropped connections).</li>
 			<li>The override button will let the 'Anyone home' device think there is someone home, even if no presence is detected. This can be helpful for visitors or to take some control over the 'Anyone home' status from other scripts.</li>
-			<li>The plugin will automatically determine which command to use it the tracker is a router with a supported wireless interface that can be queried through ssh. If your router (chipset) is not supported you can experiment how to get the right info from the router (or other tracker) and post that info on the forum. 
-			Make&Model specific commands can be added to the plugin, but i don't own or know every model, so someone has to provide a working ssh command or other method of getting a list of present tags from a tracker.</li>
+			<li>The plugin will automatically determine which command to use if the tracker is a router with a supported wireless interface that can be queried through ssh. If your router (chipset) is not supported you can experiment how to get the right info from the router (or other tracker) and post that info on the forum. 
+			Make &amp Model specific commands can be added to the plugin, but i don't own or know every model, so someone has to provide a working ssh command or other method of getting a list of present tags from a tracker.</li>
 		</ul>
 		<h3>Is my tracker supported?</h3>
 		If it supports ssh, then it is probably supported out-of-the box. Some routers support ssh but have a proprietary command set. If your router is not yet supported and you can figure out which command to use
 		it can be easily added to the plugin. Since version 2.0 also other types of trackers can be added to the plugin, like getting pressent MAC addresses from a html page or some type of api. I cannot develop/test 
-		a tracker for devices i don't have acces to, so adding proprietary methods depends on the community (you?), to provide working/tested code or better yet a pull request on github. The (python) code needs to query
+		a tracker module for devices i don't have acces to, so adding proprietary methods depends on the community (you?), to provide working/tested code or better yet a pull request on github. The (python) code needs to query
 		the tracker for connected devices, including everything that is needed to connect and login to the tracker. It might be a simple curl command.
 	</description>
 	<params>
@@ -353,7 +353,7 @@ class BasePlugin:
 				else:
 					self.active_trackers[my_address]=poll_methods[my_type](my_address, my_port, my_user, my_password, my_keyfile, my_interval)
 				self.active_trackers[my_address].register_list_interpreter(self.onDataReceive)
-				Domoticz.Status('Tracker activated:' + my_address + ' port ' + str(my_port) + ', user: ' + my_user + ', type: ' + my_type + ' and options: ' + str(optional))
+				Domoticz.Status('Tracker activated:' + my_address + ' port ' + str(my_port) + ', user: ' + my_user + ', type: ' + my_type + ' and options: ' + str(data_helper.hide_password_in_list(optional)))
 		Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
 			
 		Domoticz.Debug("Plugin initialization done.")

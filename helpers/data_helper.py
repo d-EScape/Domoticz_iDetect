@@ -126,6 +126,11 @@ def options_from_string(input):
 	if illegal > 0:
 		option_dict['configuration errors']=illegal
 	return option_dict
+	
+def hide_password_in_list(input):
+	if 'password' in input:
+		input['password'] = '********'
+	return input
 		
 				
 			
