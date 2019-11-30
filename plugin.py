@@ -249,10 +249,6 @@ class BasePlugin:
 			Domoticz.Status('Using custom keyfile for authentication:' + self.keyfile)
 		
 		self.trackerpass = Parameters["Password"]
-		if self.trackerpass != "":
-			if not oscmdexists("sshpass -V"):
-				Domoticz.Error("A SSH password is set for the plugin, but the sshpass command seems to be unavailable. Please install it first.")
-				return
 				
 		#Create "Anyone home" device
 		if self.ANYONE_HOME_UNIT not in Devices:
@@ -443,15 +439,6 @@ def onCommand(Unit, Command, Level, Hue):
 	_plugin.onCommand(Unit, Command, Level, Hue)
 
 # Generic helper functions
-def oscmdexists(cmd):
-	try:
-		result = subprocess.check_output(cmd, timeout=1, shell=True)
-	except subprocess.CalledProcessError as err:
-		Domoticz.Debug("trying [" + cmd + "] raised an error (error: " + str(err.returncode) + "):" + str(err.output))
-		return False
-	Domoticz.Debug("Checking if [" + cmd + "] will run: OK")
-	return True
-
 def DumpConfigToLog():
 	for x in Parameters:
 		if Parameters[x] != "":
