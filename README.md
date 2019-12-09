@@ -4,6 +4,8 @@ The modular and highly tweakable version that also runs on Windows :D
 
 iDetect is a python plugin for Domoticz, which allows you to detect the presence of devices using various methods. Since version 2 it has also become a framework that can relatively easily be extended to support other types of presence detection.
 
+![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/devices-idetect021.jpg)
+
 ###(New) features 
 * Running on Windows
 * Adding additional detection methods (it is designed to be a framework)
@@ -39,6 +41,8 @@ There are several ways to configure some settings, but only one value will be us
 * New style configuration 
 * Old style configuration
 * Global setting (corresponding field on the plugin’s settings page)
+
+![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings_v2.jpg)
 
 ####Tracker configuration
 `<ip address>#<options>`  
