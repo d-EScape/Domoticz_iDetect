@@ -6,7 +6,7 @@ iDetect is a python plugin for Domoticz, which allows you to detect the presence
 
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/devices-idetect021.jpg)
 
-###(New) features 
+### (New) features 
 * Running on Windows
 * Adding additional detection methods (it is designed to be a framework)
 * Ping devices on your network (not the preferred method, but can be useful)
@@ -16,7 +16,7 @@ iDetect is a python plugin for Domoticz, which allows you to detect the presence
 * Tweaking individual settings for ‘tags’ (eg your mobile phone)
 * Getting connected devices from Netgear Orbi using http api (as an example for adding other methods)
 
-###(New) requirements
+### (New) requirements
 * the python module 'paramiko' needs to be installed (sudo pip3 install paramiko on linux)
 * Python 3.5 or newer
 * No longer needs sshpass for password based authentication (paramiko takes care of that.
@@ -36,7 +36,7 @@ First off… the labels on some configuration fields have changed, without reall
 
 I think these names better reflect their function, since other devices than routers can now track tags and tags are not necessarily MAC addresses.
 
-###Configuration syntax
+### Configuration syntax
 There are several ways to configure some settings, but only one value will be used. Priority is taken by (high to low):
 * New style configuration 
 * Old style configuration
@@ -44,14 +44,14 @@ There are several ways to configure some settings, but only one value will be us
 
 ![alt text](https://github.com/d-EScape/Domoticz_iDetect/blob/master/resources/settings_v2.jpg)
 
-####Tracker configuration
+#### Tracker configuration
 `<ip address>#<options>`  
 Trackers should be separated by comma (,)  
 
 Or (for backward compatibility)  
 `<username>@<ip address>:<port>=<type>#<options>`
 
-######Options syntax
+###### Options syntax
 option1=value1&option2=value2&option3=value3  
 For valid options see below  
 Values can not contain comma, ampersand or equals sign!  
@@ -86,7 +86,7 @@ E.g. `ssh=brctl` would use a basic ssh tracker and poll using a brctl command on
 Be warned: the ssh option can be a powerful tool, but there is no fixed syntax, no checking if it is safe or if the router actually knows the command(s)! No extra path is added, so if the command is not in the routers path then you need to call it using a full path.  etc etc etc …  
 *Opportunity:* Turning your specific ssh command into a module might benefit the community of you share as a pull request or on the forum!  
 
-####Tags configuration
+#### Tags configuration
 `<name>=<identifier>#<options>`  
 
 The name is the device name shown in the domoticz user interface and will also be used as the unit id.  
@@ -100,7 +100,7 @@ grace=number of seconds after a last confirmation of presence that a device is a
 
 A tag will still accept `#ignore` as a single(!) option (so without the =true part), again to maintain backward compatibility, so please change it.
 
-Extra’s
+### Extra’s
 
 I included a ‘dummy’ module. If you specify a tracker like `192.168.1.1#type=dummy` , then nothing is actually polled, but a (hard coded) list of Mac addresses is returned to the plugin on every ‘poll’. This can be useful for testing.
 
