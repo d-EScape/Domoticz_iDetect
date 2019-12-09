@@ -52,7 +52,7 @@ Or (for backward compatibility)
 `<username>@<ip address>:<port>=<type>#<options>`
 
 #### Options syntax
-option1=value1&option2=value2&option3=value3  
+`option1=value1&option2=value2&option3=value3`  
 For valid options see below  
 Values can not contain comma, ampersand or equals sign!  
 
