@@ -103,3 +103,6 @@ A tag will still accept `#ignore` as a single(!) option (so without the =true pa
 ## Extra’s
 I included a ‘dummy’ module. If you specify a tracker like `192.168.1.1#type=dummy` , then nothing is actually polled, but a (hard coded) list of Mac addresses is returned to the plugin on every ‘poll’. This can be useful for testing.
 
+## Adding your own tracker type
+Have a look at the examples in the trackers directory and especially the fake_tracker.py, which contains some explanation.  
+Pleas, do share your tested trackers! You can do so as a pull request or on the Domoticz forum.
