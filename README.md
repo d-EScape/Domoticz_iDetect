@@ -48,8 +48,8 @@ There are several ways to configure some settings, but only one value will be us
 `<ip address>#<options>`  
 Trackers should be separated by comma (,)  
 
-Or (for backward compatibility)  
-`<username>@<ip address>:<port>=<type>#<options>`
+Or (for backward compatibility, so don't use on new setup!)  
+`<username>@<ip address>:<port>=<type>#<old-style-options>`
 
 #### Options syntax
 `option1=value1&option2=value2&option3=value3`  
