@@ -23,10 +23,10 @@ iDetect is a python plugin for Domoticz, which allows you to detect the presence
 
 More information and support can be found on the Domoticz forum topic at https://www.domoticz.com/forum/viewtopic.php?f=65&t=20467.  
 
-Version 2 introduces some changes in the way the plugin is configured. Most older configuration will still work, but *check your logs for any messages indicating you are using a deprecated configuration syntax*.  
+Version 2 introduces some changes in the way the plugin is configured. Most older configuration will still work, but **check your logs for any messages indicating you are using a deprecated configuration syntax**.  
 
 I kept the configuration as backwards compatible as possible, so it will work in most cases, for the time being…
-The advanced options have been improved and this will be the syntax going forward. The old options will probably stop working in the future (if I decide to do some clean-up).  
+The advanced options have been improved and this will be the syntax going forward. **The old options will probably stop working in the future** (if I decide to do some clean-up).  
 
 There are some (configuration) breaking changes. E.g. `#ignore` changed to `#ignore=true`. The new syntax is explained below.  
 
