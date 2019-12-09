@@ -1,6 +1,6 @@
 # Domoticz_iDetect v2
 
-The modular and highly tweakable version that also runs on Windows :D
+**_The modular and highly tweakable version that also runs on Windows :D_**
 
 iDetect is a python plugin for Domoticz, which allows you to detect the presence of devices using various methods. Since version 2 it has also become a framework that can relatively easily be extended to support other types of presence detection.
 
@@ -57,19 +57,19 @@ For valid options see below
 Values can not contain comma, ampersand or equals sign!  
 
 Only the IP address is mandatory. The plugin will use defaults for all other parameters.  
-Example:  
+**_Example:_**  
 `192.168.1.1`      
 This configuration will use the globally set username and password to connect to 192.168.1.1. It will use ssh and automatically detect the command to be used (if supported by the plugin)  
 
-Example:  
+**_Example:_**  
 `192.168.1.1:2022#type=routeros&interval=30&user=admin&password Monday`      
 In this example the username and password are specific to this tracker. Port 2020 is used instead of the default (22). The routeros tracker module is used instead of ssh autodetection. The poll interval is 30 seconds instead of the globally set poll interval.  
 
-Backwards compatibility:  
+**_Backwards compatibility:_**  
 `admin@192.168.1.1=routeros`     
 Will still work. This was the old style configuration. The new style is preferred, but i put extra effort in maintaining some backward compatibility for (most) existing users. Especially for when this version becomes the master branch and might be installed automatically.  
 
-Valid options for trackers are:   
+**_Valid options for trackers are:_**   
 port=Port number  
 type=tracker module to use (see `__init__.py` in the tacker directory for supported tracker types)  
 user=user name on the tracker (for ssh the ssh username)  
@@ -84,7 +84,7 @@ E.g. `ssh=brctl` would use a basic ssh tracker and poll using a brctl command on
 `ssh=wl -i eth5 assoclist; wl -i eth6 assoclist` would use a basic ssh tracker and poll using a wl command on the ssh host twice (notice the semicolon). Once for eth5 and once for eth6 (they could be in one wl command, but hey, its an example;-))  
 
 Be warned: the ssh option can be a powerful tool, but there is no fixed syntax, no checking if it is safe or if the router actually knows the command(s)! No extra path is added, so if the command is not in the routers path then you need to call it using a full path.  etc etc etc …  
-*Opportunity:* Turning your specific ssh command into a module might benefit the community of you share as a pull request or on the forum!  
+**_Opportunity:_** Turning your specific ssh command into a module might benefit the community of you share as a pull request or on the forum!  
 
 #### Tags configuration
 `<name>=<identifier>#<options>`  
