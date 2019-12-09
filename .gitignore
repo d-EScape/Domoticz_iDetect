@@ -1,2 +1,3 @@
 resources/
-README.md
+/README.md
+__pycache__/
