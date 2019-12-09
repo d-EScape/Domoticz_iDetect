@@ -62,7 +62,7 @@ Only the IP address is mandatory. The plugin will use defaults for all other par
 This configuration will use the globally set username and password to connect to 192.168.1.1. It will use ssh and automatically detect the command to be used (if supported by the plugin)  
 
 **_Example:_**  
-`192.168.1.1#port=2020&type=routeros&interval=30&user=admin&password Monday`      
+`192.168.1.1#port=2020&type=routeros&interval=30&user=admin&password=monday`      
 In this example the username and password are specific to this tracker. Port 2020 is used instead of the default (22). The routeros tracker module is used instead of ssh autodetection. The poll interval is 30 seconds instead of the globally set poll interval.  
 
 **_Backwards compatibility:_**  
