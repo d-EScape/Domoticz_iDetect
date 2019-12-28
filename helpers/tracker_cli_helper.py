@@ -11,7 +11,7 @@ generic_methods['arp'] = "{command} -a"
 generic_methods['cat'] = "{command} /proc/net/arp"
 generic_method_order = ['ip', 'brctl', 'arp', 'cat']
 
-command_wrapper = '{part}exit'
+command_wrapper = '{part};exit'
 
 interface_check={}
 interface_check['wl']="""
