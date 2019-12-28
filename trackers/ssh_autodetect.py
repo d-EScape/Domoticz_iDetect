@@ -22,7 +22,7 @@ class ssh_autodetect(ssh_tracker):
 					continue
 				else:
 					for found_interface in interfaces:
-						build_script = build_script + tracker_cli_helper.get_tracker_cli(supported_command, self.command_support[supported_command], found_interface) + '\n'
+						build_script = build_script + tracker_cli_helper.get_tracker_cli(supported_command, self.command_support[supported_command], found_interface)
 		if build_script == '':
 			for generic_command in tracker_cli_helper.generic_method_order:
 				if generic_command in self.command_support:
@@ -36,7 +36,7 @@ class ssh_autodetect(ssh_tracker):
 		self.trackerscript = tracker_cli_helper.wrap_command(build_script)
 		Domoticz.Debug(self.tracker_ip + ' Prepared to poll using: ' + self.trackerscript)
 		self.is_ready = True
-		
+
 	def find_tracker_command(self):
 		#Run a script on the tracker itself to determine which command to use
 		command_path = {}
@@ -54,7 +54,7 @@ class ssh_autodetect(ssh_tracker):
 		else:
 			Domoticz.Debug(self.tracker_ip + " Could not retreive available commands")
 			return None
-			
+
 	def find_tracker_interfaces(self, for_command):
 		#Run a script on the tracker itself to determine which interfaces can be queried using the command
 		tracker_command = tracker_cli_helper.get_try_interface_cli(for_command, self.command_support[for_command])
