@@ -23,10 +23,10 @@ iDetect is a python plugin for Domoticz, which allows you to detect the presence
 
 More information and support can be found on the Domoticz forum topic at https://www.domoticz.com/forum/viewtopic.php?f=65&t=20467.  
 
-Version 2 introduces some changes in the way the plugin is configured. Most older configuration will still work, but *check your logs for any messages indicating you are using a deprecated configuration syntax*.  
+Version 2 introduces some changes in the way the plugin is configured. Most older configuration will still work, but **check your logs for any messages indicating you are using a deprecated configuration syntax**.  
 
 I kept the configuration as backwards compatible as possible, so it will work in most cases, for the time being…
-The advanced options have been improved and this will be the syntax going forward. The old options will probably stop working in the future (if I decide to do some clean-up).  
+The advanced options have been improved and this will be the syntax going forward. **The old options will probably stop working in the future** (if I decide to do some clean-up).  
 
 There are some (configuration) breaking changes. E.g. `#ignore` changed to `#ignore=true`. The new syntax is explained below.  
 
@@ -48,11 +48,11 @@ There are several ways to configure some settings, but only one value will be us
 `<ip address>#<options>`  
 Trackers should be separated by comma (,)  
 
-Or (for backward compatibility)  
-`<username>@<ip address>:<port>=<type>#<options>`
+Or (for backward compatibility, so don't use on new setup!)  
+`<username>@<ip address>:<port>=<type>#<old-style-options>`
 
 #### Options syntax
-option1=value1&option2=value2&option3=value3  
+`option1=value1&option2=value2&option3=value3`  
 For valid options see below  
 Values can not contain comma, ampersand or equals sign!  
 
@@ -62,12 +62,12 @@ Only the IP address is mandatory. The plugin will use defaults for all other par
 This configuration will use the globally set username and password to connect to 192.168.1.1. It will use ssh and automatically detect the command to be used (if supported by the plugin)  
 
 **_Example:_**  
-`192.168.1.1:2022#type=routeros&interval=30&user=admin&password Monday`      
+`192.168.1.1#port=2020&type=routeros&interval=30&user=admin&password=monday`      
 In this example the username and password are specific to this tracker. Port 2020 is used instead of the default (22). The routeros tracker module is used instead of ssh autodetection. The poll interval is 30 seconds instead of the globally set poll interval.  
 
 **_Backwards compatibility:_**  
 `admin@192.168.1.1=routeros`     
-Will still work. This was the old style configuration. The new style is preferred, but i put extra effort in maintaining some backward compatibility for (most) existing users. Especially for when this version becomes the master branch and might be installed automatically.  
+Will still work. This was the old style configuration. The new style is preferred, but i put extra effort in maintaining some backward compatibility for (most) existing users.  
 
 **_Valid options for trackers are:_**   
 port=Port number  
@@ -103,3 +103,6 @@ A tag will still accept `#ignore` as a single(!) option (so without the =true pa
 ## Extra’s
 I included a ‘dummy’ module. If you specify a tracker like `192.168.1.1#type=dummy` , then nothing is actually polled, but a (hard coded) list of Mac addresses is returned to the plugin on every ‘poll’. This can be useful for testing.
 
+## Adding your own tracker type
+Have a look at the examples in the trackers directory and especially the fake_tracker.py, which contains some explanation.  
+Please, do share your tested trackers! You can do so as a pull request or on the Domoticz forum.
