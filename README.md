@@ -38,14 +38,14 @@ I think these names better reflect their function, since other devices than rout
 
 ## Installation
 Assumming you have allready installed pip3 and git
-First install the required (but not standard) python modules if they ar not already installed 
-`sudo pip3 install requests paramiko`
+First install the required (but not standard) python modules if they ar not already installed   
+`sudo pip3 install requests paramiko`  
 
-Assuming domoticz is installed in /home/pi (the default on raspberry pi)
-`cd /home/pi/domoticz/plugins`
-`git clone https://github.com/d-EScape/Domoticz_iDetect.git iDetect`
+Assuming domoticz is installed in /home/pi (the default on raspberry pi)  
+`cd /home/pi/domoticz/plugins`  
+`git clone https://github.com/d-EScape/Domoticz_iDetect.git iDetect`  
 
-Restart Domoticz
+Restart Domoticz  
 In the Domoticz Hardware page add 'iDetect multifunctional presence detection' and folow the instructions below to configure it.
 
 ## Updating
