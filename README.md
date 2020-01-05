@@ -49,9 +49,9 @@ Restart Domoticz
 In the Domoticz Hardware page add 'iDetect multifunctional presence detection' and folow the instructions below to configure it.
 
 ## Updating
-To update the plugin go into the iDetect directory and run a pull request
-`cd /home/pi/domoticz/plugins/iDetect`
-`git pull`
+To update the plugin go into the iDetect directory and run a pull request  
+`cd /home/pi/domoticz/plugins/iDetect`  
+`git pull`  
 
 ## Configuration syntax
 There are several ways to configure some settings, but only one value will be used. Priority is taken by (high to low):
