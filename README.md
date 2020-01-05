@@ -17,7 +17,7 @@ iDetect is a python plugin for Domoticz, which allows you to detect the presence
 * Getting connected devices from Netgear Orbi using http api (as an example for adding other methods)
 
 ## (New) requirements
-* the python module 'paramiko' needs to be installed (sudo pip3 install paramiko on linux)
+* The python module 'paramiko' needs to be installed (sudo pip3 install paramiko on linux)
 * Python 3.5 or newer
 * No longer needs sshpass for password based authentication (paramiko takes care of that.
 
@@ -35,6 +35,23 @@ First off… the labels on some configuration fields have changed, without reall
 ‘MAC addresses to monitor’ is now called ‘tags’  
 
 I think these names better reflect their function, since other devices than routers can now track tags and tags are not necessarily MAC addresses.
+
+## Intstall
+Assumming you have allready installed pip3 and git
+First install the required (but not standard) python modules if they ar not already installed 
+`sudo pip3 install requests paramiko`
+
+Assuming domoticz is installed in /home/pi (the default on raspberry pi)
+`cd /home/pi/domoticz/plugins`
+`git clone https://github.com/d-EScape/Domoticz_iDetect.git iDetect`
+
+Restart Domoticz
+In the Domoticz Hardware page add 'iDetect multifunctional presence detection' and folow the instructions below to configure it.
+
+## Updating
+To update the plugin go into the iDetect directory and run a pull request
+`cd /home/pi/domoticz/plugins/iDetect`
+`git pull`
 
 ## Configuration syntax
 There are several ways to configure some settings, but only one value will be used. Priority is taken by (high to low):
