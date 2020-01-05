@@ -37,7 +37,7 @@ First off… the labels on some configuration fields have changed, without reall
 I think these names better reflect their function, since other devices than routers can now track tags and tags are not necessarily MAC addresses.
 
 ## Installation
-Assumming you have allready installed pip3 and git
+Assumming you have allready installed pip3 and git  
 First install the required (but not standard) python modules if they ar not already installed   
 `sudo pip3 install requests paramiko`  
 
