@@ -7,5 +7,5 @@ class ssh_unifi_usg_arp(ssh_tracker):
 		self.prepare_for_polling()
 
 	def prepare_for_polling(self):
-		self.trackerscript = "show arp"
+		self.trackerscript = "vbash -ic 'show arp'"
 		self.is_ready = True
