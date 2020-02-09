@@ -27,7 +27,8 @@ done
 
 interface_check['wlanconfig']="""
 for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath|^wl');do
-	{command} $iface list > /dev/null 2>&1 && printf "~$iface"
+	testif=`wlanconfig $iface list 2>&1`
+	[ $? == 0 ] && [ "$testif" != "Not supported" ] && printf "~$iface"
 done
 """
 
