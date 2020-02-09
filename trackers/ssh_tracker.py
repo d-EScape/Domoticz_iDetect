@@ -24,7 +24,7 @@ class ssh_tracker(tracker):
 		else:
 			self.client = paramiko.SSHClient()
 			self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-		
+
 	def poll_present_tag_ids(self):
 		Domoticz.Debug(self.tracker_ip + ' Start poll and return results to ' + str(self.receiver_callback))
 		success, raw_data = self.getfromssh(self.trackerscript)
@@ -35,12 +35,12 @@ class ssh_tracker(tracker):
 		else:
 			self.error_count = 0
 			self.receiver_callback(raw_data)
-		
+
 	def prepare_for_polling(self):
-		#Would normally be implemented 
+		#Should be implemented in specfic tracker
 		Domoticz.Debug(self.tracker_ip + ' Has no prepare_for_pollling method.')
 		return True
-	
+
 	def ssh_connect(self):
 		if NOPARAMIKO:
 			Domoticz.Error('Missing paramiko module requred for ssh. Install it using: sudo pip3 install paramiko')
@@ -67,7 +67,7 @@ class ssh_tracker(tracker):
 				except Exception as e:
 					Domoticz.Error(self.tracker_ip + ' SSH Could not connect (with os key). Exception: ' + str(e))
 					self.connected = False
-					return False	
+					return False
 		else:
 			try:
 				self.client.connect(self.tracker_ip, username=self.tracker_user, password=self.tracker_password, timeout=5)
@@ -84,7 +84,7 @@ class ssh_tracker(tracker):
 			return False
 		self.connected = True
 		return True
-			
+
 	def getfromssh(self, tracker_cli, alltimeout=5, sshtimeout=3):
 		if NOPARAMIKO:
 			return False, ''
@@ -116,7 +116,7 @@ class ssh_tracker(tracker):
 		timespend=datetime.now()-starttime
 		Domoticz.Debug(self.tracker_ip + " ====> SSH session took " + str(timespend.microseconds//1000) + " milliseconds.")
 		return True, ssh_output
-		
+
 	def stop_now(self):
 		self.is_ready = False
 		try:
