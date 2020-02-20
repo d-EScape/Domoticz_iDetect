@@ -3,6 +3,7 @@ chipset_methods = {}
 chipset_methods['wl'] = "{command} -i {interfaces} assoclist\n"
 chipset_methods['iwinfo'] = "{command} {interfaces} assoclist\n"
 chipset_methods['wlanconfig'] = "{command} {interfaces} list\n"
+chipset_methods['wl_atheros'] = "{command} -i {interfaces} assoclist\n"
 chipset_methods['qcsapi_sockrpc'] = "concount=$({command} get_count_assoc {interfaces});i=0;while [[ $i -lt $concount ]]; do {command} get_station_mac_addr {interfaces} $i;i=$((i+1));done\n"
 generic_methods= {}
 generic_methods['ip'] = "{command} neighbour\n"
@@ -32,6 +33,12 @@ for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath
 done
 """
 
+interface_check['wl_atheros']="""
+for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^wl');do
+	{command} -i $iface assoclist > /dev/null 2>&1 && printf "~$iface"
+done
+"""
+
 interface_check['qcsapi_sockrpc']="""
 for iface in $(qcsapi_sockrpc get_primary_interface);do
 	{command} get_assoc_records $iface > /dev/null 2>&1 && printf "~$iface"
@@ -43,6 +50,7 @@ export PATH=/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:$PATH
 type wl
 type iwinfo
 type wlanconfig
+type wl_atheros
 type qcsapi_sockrpc
 type ip
 type brctl
