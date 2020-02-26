@@ -34,7 +34,7 @@ done
 """
 
 interface_check['wl_atheros']="""
-for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^wl');do
+for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | grep -E '^eth|^wlan|^ath|^wl');do
 	{command} -i $iface assoclist > /dev/null 2>&1 && printf "~$iface"
 done
 """
