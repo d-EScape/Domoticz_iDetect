@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-PATTERN_MAC = r'[a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}[:][a-fA-F0-9]{2}'
+PATTERN_MAC = r'[a-fA-F0-9]{2}[:-][a-fA-F0-9]{2}[:-][a-fA-F0-9]{2}[:-][a-fA-F0-9]{2}[:-][a-fA-F0-9]{2}[:-][a-fA-F0-9]{2}'
 PATTERN_IP = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
 CONFIG_DELIMITERS = ['@', ':', '=', '#']
 OPTION_DELIMITER = '&'
@@ -37,31 +37,37 @@ def is_ip_address(input):
 def time_since_last(past_moment):
 	number_of_seconds = (datetime.now() - past_moment).total_seconds()
 	return number_of_seconds
-	
+
 def mac_from_data(raw_data):
 	match_this = re.compile(PATTERN_MAC)
 	found_this = match_this.findall(raw_data)
 	return found_this
-	
+
 def ip_from_data(raw_data):
 	match_this = re.compile(PATTERN_IP)
 	found_this = match_this.findall(raw_data)
 	return found_this
 
+def clean_tag(raw_tag):
+	this_tag = raw_tag.upper().replace('-',':')
+	return this_tag
+
 def clean_tag_id_list(raw_data, tag_type):
 	if isinstance(raw_data, list):
-		clean_list = [x.upper() for x in raw_data]
-		return clean_list
-	raw_data = raw_data.upper()
-	if tag_type == 'mac_address':
-		match_this = re.compile(PATTERN_MAC)
-	elif tag_type == 'ip_address':
-		match_this = re.compile(PATTERN_IP)
+		raw_list = raw_data
 	else:
-		Domoticz.Error('Undefined tag_type for data: ' + raw_data)
-	clean_list = match_this.findall(raw_data)
+		raw_data = raw_data.upper()
+		if tag_type == 'mac_address':
+			match_this = re.compile(PATTERN_MAC)
+		elif tag_type == 'ip_address':
+			match_this = re.compile(PATTERN_IP)
+		else:
+			Domoticz.Error('Undefined tag_type for data: ' + raw_data)
+			return []
+		raw_list = match_this.findall(raw_data)
+	clean_list = [clean_tag(x) for x in raw_list]
 	return clean_list
-	
+
 def guess_type(input):
 	if isinstance(input, str):
 		val = None
@@ -84,7 +90,7 @@ def custom_or_default(config, field, default):
 		if config[field] != '' and not config[field] is None:
 			return config[field]
 	return default
-	
+
 def get_config_part(config_str='', after='', before='', mandatory=False, default=None):
 	if config_str == '':
 		return None
@@ -108,7 +114,7 @@ def get_config_part(config_str='', after='', before='', mandatory=False, default
 	if config_str != '' and not config_str is None :
 		return guess_type(config_str)
 	return default
-	
+
 def options_from_string(input):
 	if input is None or input.strip() == '':
 		return {}
@@ -126,13 +132,8 @@ def options_from_string(input):
 	if illegal > 0:
 		option_dict['configuration errors']=illegal
 	return option_dict
-	
+
 def hide_password_in_list(input):
 	if 'password' in input:
 		input['password'] = '********'
 	return input
-		
-				
-			
-
-	
