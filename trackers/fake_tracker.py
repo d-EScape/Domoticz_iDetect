@@ -32,7 +32,8 @@ class fake_tracker(tracker):
 	def poll_present_tag_ids(self):
 		# Add code to retrieve data from a tracker and return the (raw string of formatted list) data to
 		# the receiver_callback that is in the base_tracker
-		self.receiver_callback(['11:22:33:44:55:66', '10:20:30:40:50:60', 'Aa:bB:CC:DD:EE:0f'])
+#		self.receiver_callback(['11:22:33:44:55:66', '10:20:30:40:50:60', 'Aa:bB:CC:DD:EE:0f'])
+		self.receiver_callback('this is a text with some 11:22:33:44:55:66 mac addresses 10:20:30:40:50:60. It should find 3 of them Aa-bB-CC-DD-EE-0f, even if formatted differently')
 		# This would also work:
 		#self.receiver_callback('i am a string with some 11:22:33:44:55:66 addrresses and other 10:20:30:40:50:60 unusable text that will be ignored Aa:bB:CC:DD:EE:0f addresses may be upper or lower case')
 	
