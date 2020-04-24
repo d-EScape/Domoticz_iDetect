@@ -11,6 +11,7 @@ from trackers.ssh_zyxel_arp import ssh_zyxel_arp
 from trackers.ssh_unifi_usg_arp import ssh_unifi_usg_arp
 from trackers.http_orbi import http_orbi
 from trackers.http_unifi import http_unifi
+from trackers.http_omada import http_omada
 
 poll_methods = {
     'default': ssh_autodetect,
@@ -24,6 +25,7 @@ poll_methods = {
     'unifiusg-arp': ssh_unifi_usg_arp,
     'unifi-http': http_unifi,
     'orbi-http': http_orbi,
+    'omada-http': http_omada,
     'dummy': fake_tracker,
     'ping': ping_tracker
 }
