@@ -5,8 +5,8 @@ import helpers.data_helper as data_helper
 import re
 from datetime import datetime
 
-ARP_PATTERN_MAC = r'(?=.*\bDC\b)(?:\S+ ){3}(\S+)'
-ARP_PATTERN_IP = r'(?=.*\bDC\b)(?:\S+ ){2}(\S+)'
+ARP_PATTERN_MAC = r'(?=.*\bDC\b|.*\b C\b)(?:\S+ ){3}(\S+)'
+ARP_PATTERN_IP = r'(?=.*\bDC\b|.*\b C\b)(?:\S+ ){2}(\S+)'
 
 def remove_white_space(data):
 	this_data = re.sub(' +', ' ',data)
