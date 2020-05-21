@@ -33,7 +33,6 @@ class ssh_routeros_arp(ssh_tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
 		self.prepare_for_polling()
-		self.tag_type = 'mac_address'
 
 	def prepare_for_polling(self):
 		Domoticz.Debug('routeros-arp prepare_for_polling')
