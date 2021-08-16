@@ -206,26 +206,29 @@ class BasePlugin:
 		return
 
 	def onStart(self):
+		self.prepwait=2
+
+	def doPrep(self):
 		import sys
 		import re
 		import subprocess
 		from trackers import poll_methods
 		from override_switch import override_switch
-		
+
 		#setup debugging if enabled in settings
 		if Parameters["Mode5"]=="True":
 			Domoticz.Debugging(2)
 			self.debug=True
 		else:
 			self.debug=False
-			
+
 		self.active_trackers={}
 		self.tags_to_monitor={}
 
 		self.present_count = 0
 		self.anyone_home = False
 		self.pollinterval=int(Parameters["Mode2"])
-		
+
 		self.ANYONE_HOME_UNIT = 1
 		self.OVERRIDE_UNIT = 255
 
@@ -386,6 +389,15 @@ class BasePlugin:
 
 	def onHeartbeat(self):
 		Domoticz.Debug('onHeartbeat called')
+		if self.prepwait > 0:
+			Domoticz.Log("Wait " + str(self.prepwait) + " heartbeats before starting communications (work-around for unexplained failure with Debian 11 and python 3.9)")
+			self.prepwait = self.prepwait -1
+			return
+		if self.prepwait == 0:
+			Domoticz.Log("Let's get things started")
+			self.prepwait = -1
+			self.doPrep()
+			return
 		# Send a heartbeat to the (base)tracker in case a tracker needs a pulse
 		# not needed for poll timing, but might be useful when developing custom trackers
 		if self.plugin_ready:
