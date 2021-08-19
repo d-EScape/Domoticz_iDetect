@@ -42,7 +42,7 @@ class ping_tracker(tracker):
 		self.is_ready = True
 	
 	def can_be_pinged(self, tagged_host):
-		error_level = os.system(self.ping_command + tagged_host)
+		error_level = os.system(self.ping_command + tagged_host + ' > /dev/null')
 		Domoticz.Debug('Tried pinging tag: ' + tagged_host + ' --> error_level (0 means online): ' + str(error_level))
 		return not error_level
 		
