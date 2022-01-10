@@ -1,5 +1,7 @@
-# Tracker for  TP-link Omada Controller
-# Omada code nicked from https://github.com/titilambert/tplink
+# Tracker for  TP-link Omada Controller 4.x.x
+# Omada code partially nicked from https://github.com/titilambert/tplink
+
+# Tested with Omada 4.4.8 on Linux. Does not work with Omada 3.x.x which is end-of-life.
 
 import Domoticz
 import requests
@@ -26,43 +28,33 @@ class http_omada(tracker):
             self.connect()
         current_page_size = 10
         current_page = 1
-        clients_path = "/web/v1/controller?userStore&token="
         total_rows = current_page_size + 1
+        clients_path = "/api/v2/sites/Default/clients"
         mac_string = ''
+        query_string = ''
+   
         while (current_page - 1) * current_page_size <= total_rows:
-            clients_data = {"method": "getGridActiveClients",
-                            "params": {"sortOrder": "asc",
-                                      "currentPage": current_page,
-                                      "currentPageSize": current_page_size,
-                                      "filters": {"type": "all"}
-                                      }
-                           }
-            res = self.session.post(self.baseurl + clients_path + self.token,
-                               data=json.dumps(clients_data),
-                               verify=self.verify_ssl)
-            # Domoticz.Debug(self.tracker_ip + ' URL: ' + self.baseurl + clients_path + self.token)
-            # Domoticz.Debug(self.tracker_ip + ' Returned: ' + res.text)
+            query_string = {"token": self.token, "currentPage": current_page, "currentPageSize": current_page_size, "filters.active": "true"}
+            res = self.session.get(self.baseurl + clients_path, verify=self.verify_ssl, params=query_string)
+            Domoticz.Debug(self.tracker_ip + ' URL: ' + res.request.url)
             results = res.json()['result']
             total_rows = results['totalRows']
             for data in results['data']:
                 mac_string = mac_string + data['mac'].replace('-', ':') + ','
             current_page += 1
-
         Domoticz.Debug(self.tracker_ip + ' Returned: ' + mac_string)
         self.receiver_callback(mac_string)
 
     def connect(self):
-        login_path = "/api/user/login?ajax"
+        login_path = "/api/v2/login"
+        headers = {'content-type': 'application/json'} 
 
         self.session = requests.Session()
-        login_data = {"method": "login",
-                      "params": {"name": self.tracker_user,
-                                 "password": self.tracker_password
-                                }
-                     }
+        login_data = {"username":self.tracker_user,"password":self.tracker_password}
         res = self.session.post(self.baseurl + login_path,
                            data=json.dumps(login_data),
-                           verify=self.verify_ssl)
+                           verify=self.verify_ssl,
+                           headers=headers)
         # Domoticz.Debug(self.tracker_ip + ': ' +  res.text)
         if res.json().get('msg') != 'Log in successfully.':
             Domoticz.Error(self.tracker_ip + 'Failed to log in to Omada API')
