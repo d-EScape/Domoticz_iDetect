@@ -36,6 +36,7 @@ class tracker():
 		Domoticz.Debug(self.tracker_ip + ' Class has no polling method defined')
 	
 	def receiver_callback(self, raw_data):
+		Domoticz.Debug(self.tracker_ip + ' Sent RAW:' + str(raw_data))
 		self.found_tag_ids = data_helper.clean_tag_id_list(raw_data, self.tag_type)
 		if not self.interpreter_callback is None:
 			self.interpreter_callback(self)

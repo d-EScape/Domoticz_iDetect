@@ -13,6 +13,7 @@ from trackers.ssh_aimesh_json import ssh_aimesh_json
 from trackers.http_orbi import http_orbi
 from trackers.http_unifi import http_unifi
 from trackers.http_omada import http_omada
+from trackers.fritzbox import fritzbox
 
 poll_methods = {
     'default': ssh_autodetect,
@@ -28,6 +29,7 @@ poll_methods = {
     'unifi-http': http_unifi,
     'orbi-http': http_orbi,
     'omada-http': http_omada,
+    'fritzbox': fritzbox,
     'dummy': fake_tracker,
     'ping': ping_tracker
 }
