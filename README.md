@@ -17,7 +17,7 @@ iDetect is a python plugin for Domoticz, which allows you to detect the presence
 * Getting connected devices from Netgear Orbi using http api (as an example for adding other methods)
 
 ## (New) requirements
-* The python module 'paramiko' needs to be installed (sudo pip3 install paramiko on linux)
+* The python modules 'paramiko' and 'fritzconnection' needs to be installed (sudo pip3 install paramiko fritzconnection on linux)
 * Python 3.5 or newer
 * No longer needs sshpass for password based authentication (paramiko takes care of that.
 
