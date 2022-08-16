@@ -4,12 +4,8 @@
 
 import Domoticz
 from trackers.tracker_base import tracker
-try:
-	from fritzconnection import FritzConnection
-	from fritzconnection.lib.fritzwlan import FritzWLAN
-	from fritzconnection.core.exceptions import FritzServiceError
-except ImportError as e:
-	Domoticz.Error('Failed to load iDetect. The fritzconnection python module is required. ' + str(e))
+from fritzconnection import FritzConnection
+from fritzconnection.lib.fritzwlan import FritzWLAN
 
 class fritzbox(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
