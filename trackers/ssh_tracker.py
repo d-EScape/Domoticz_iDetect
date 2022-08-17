@@ -18,6 +18,9 @@ class ssh_tracker(tracker):
 		self.sshbin = 'ssh'
 		self.connected = False
 		self.my_transport = None
+		if not tracker_port:
+			tracker_port = 22
+
 		Domoticz.Debug(self.tracker_ip + ' Tracker is of the ssh kind')
 		if NOPARAMIKO:
 			Domoticz.Error('Missing paramiko module required for ssh. Install it using: sudo pip3 install paramiko')

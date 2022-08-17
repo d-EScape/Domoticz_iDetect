@@ -290,11 +290,10 @@ class BasePlugin:
 			
 			self.tags_to_monitor[clean_tag_id]=tag_device(clean_tag_id, clean_name, tag_ignore, tag_grace)
 			if data_helper.is_ip_address(clean_tag_id):
-				Domoticz.Debug('Will use local ping to monitor presence for: ' + clean_tag_id)
+				Domoticz.Debug('Will use ping tracker to monitor presence for: ' + clean_tag_id)
 				if not 'local pinger' in self.active_trackers:
 					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 30)
 					self.active_trackers['local pinger'].register_list_interpreter(self.onDataReceive)
-					Domoticz.Status('Tracker activated: Local ping (for the ip address tags you configured)')
 				self.active_trackers['local pinger'].register_tag(clean_tag_id, tag_interval)
 			units_in_use.append(self.tags_to_monitor[clean_tag_id].domoticz_unit)
 			
@@ -325,7 +324,7 @@ class BasePlugin:
 				Domoticz.Error('WARNING! Tracker uses depricated configuration syntax but will work ... for now (see manual): ' + tracker)	
 			my_user=data_helper.get_config_part(tracker, before='@', default=self.trackeruser)
 			my_address=data_helper.get_config_part(tracker, after='@', mandatory=True, default='Configuration ERROR!')
-			my_port=data_helper.get_config_part(tracker, after=':', default=22)
+			my_port=data_helper.get_config_part(tracker, after=':', default=False)
 			my_type=data_helper.get_config_part(tracker, after='=', default='default')
 			optional = data_helper.options_from_string(my_options)
 			if 'configuration errors' in optional:
@@ -349,9 +348,8 @@ class BasePlugin:
 				else:
 					self.active_trackers[my_address]=poll_methods[my_type](my_address, my_port, my_user, my_password, my_keyfile, my_interval)
 				self.active_trackers[my_address].register_list_interpreter(self.onDataReceive)
-				Domoticz.Status('Tracker activated:' + my_address + ' port ' + str(my_port) + ', user: ' + my_user + ', type: ' + my_type + ' and options: ' + str(data_helper.hide_password_in_list(optional)))
+				Domoticz.Debug('Tracker config:{}, custom port:{}, user:{}, type:{} and options:{}'.format(my_address,my_port,my_user,my_type,data_helper.hide_password_in_list(optional)))
 		Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
-			
 		Domoticz.Debug("Plugin initialization done.")
 		self.plugin_ready = True
 		Domoticz.Heartbeat(10)

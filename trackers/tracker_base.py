@@ -23,6 +23,8 @@ class tracker():
 		self.poll_thread = None
 		self.poll_timer = threading.Timer(self.poll_interval, self.timer_clockwork)
 		self.poll_timer.start()
+#		Domoticz.Status('Tracker activated:' + tracker_ip + ', user: ' + tracker_user + ', type: ' + str(self.__class__.__qualname__) + ' and poll interval: ' + str(poll_interval))
+		Domoticz.Status('Starting tracker:{}, user:{}, class:{} and poll interval:{}'.format(tracker_ip,tracker_user,self.__class__.__qualname__,poll_interval))
 			
 	def heartbeat_handler(self):
 		# don't need heartbeat when using threading timers
