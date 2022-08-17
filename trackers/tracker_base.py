@@ -56,10 +56,12 @@ class tracker():
 		
 	def stop_now(self):
 		self.is_ready = False
+		Domoticz.Debug("{} main tracker stopping".format(self.tracker_ip))
 		if not self.poll_timer is None:
 			self.poll_timer.cancel()
 			self.poll_timer.join()
-			Domoticz.Debug(self.tracker_ip + ' Poll timer canceled')
+			Domoticz.Debug("{} Poll timer canceled and job finished".format(self.tracker_ip))
+		Domoticz.Debug("{} main tracker stopped".format(self.tracker_ip))
 	
 	def register_list_interpreter(self, callback):
 		self.interpreter_callback=callback

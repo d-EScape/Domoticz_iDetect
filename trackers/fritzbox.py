@@ -11,12 +11,14 @@ from time import sleep
 class fritzbox(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
+		self.busy = False
 		self.tracker_ip = tracker_ip
 		self.tracker_password = tracker_password
 		self.wlans = []
 		self.prepare_for_polling()
 		
 	def poll_present_tag_ids(self):
+		self.busy = True
 		listofhosts=[]
 		listofactivehosts=[]
 		try:
@@ -28,6 +30,7 @@ class fritzbox(tracker):
 			if host['status']==True:
 				listofactivehosts.append(host['mac'])
 		self.receiver_callback(listofactivehosts)
+		self.busy = False
 		
 	def prepare_for_polling(self):
 		try:
@@ -54,3 +57,18 @@ class fritzbox(tracker):
 						reachedend = True
 			Domoticz.Status('Fritzbox has ' + str(servicenum-1) + ' WLAN services')
 			self.is_ready = True				
+
+	def stop_now(self):
+		self.is_ready = False
+		waitcounter = 0
+		maxwait = 100
+		while self.busy and waitcounter < maxwait:
+			waitcounter = waitcounter + 1
+			sleep(0.05)
+		if waitcounter < maxwait:
+			Domoticz.Debug("Fritbox polling stopped in time (counter at {})".format(waitcounter))
+		else:
+			Domoticz.Status("Fritbox tracker forced to stop during poll (wait time exceeded)")
+		self.wlans=[]
+		self.session = None
+		super().stop_now()
