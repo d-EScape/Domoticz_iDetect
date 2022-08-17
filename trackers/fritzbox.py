@@ -11,15 +11,12 @@ from time import sleep
 class fritzbox(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
-		self.busy=False
 		self.tracker_ip = tracker_ip
 		self.tracker_password = tracker_password
 		self.wlans = []
 		self.prepare_for_polling()
 		
 	def poll_present_tag_ids(self):
-		Domoticz.Status('====== start')
-		self.busy = True
 		listofhosts=[]
 		listofactivehosts=[]
 		try:
@@ -31,8 +28,6 @@ class fritzbox(tracker):
 			if host['status']==True:
 				listofactivehosts.append(host['mac'])
 		self.receiver_callback(listofactivehosts)
-		Domoticz.Status('====== stop')
-		self.busy = False
 		
 	def prepare_for_polling(self):
 		try:
