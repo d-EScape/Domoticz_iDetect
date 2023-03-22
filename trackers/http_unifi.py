@@ -10,7 +10,7 @@ class http_unifi(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		# Update default port
 		if not tracker_port:
-			tracker_port = 443
+			self.tracker_port = 443
 
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
 

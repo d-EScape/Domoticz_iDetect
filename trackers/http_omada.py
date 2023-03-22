@@ -14,7 +14,7 @@ class http_omada(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		# Update default port
 		if not tracker_port:
-			tracker_port = 8443
+			self.tracker_port = 8443
 
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
 		self.baseurl = 'https://{}:{}'.format(self.tracker_ip, self.tracker_port)

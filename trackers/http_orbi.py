@@ -10,7 +10,7 @@ class http_orbi(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
 		if not tracker_port:
-			tracker_port = 443
+			self.tracker_port = 443
 		self.orbi_url = 'https://{}:{}/DEV_device_info.htm'.format(self.tracker_ip, self.tracker_port)
 		self.http_session = None
 		self.prepare_for_polling()

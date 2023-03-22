@@ -35,6 +35,11 @@ try:
 except ModuleNotFoundError:
 	Domoticz.Debug("Required modules for fritzbox tracker are not installed")
 	from trackers.unavailable_tracker import unavailable_tracker as fritzbox
+try:
+	from trackers.soap_netgear import soap_netgear
+except ModuleNotFoundError:
+	Domoticz.Debug("Required modules for netgear-soap tracker are not installed")
+	from trackers.unavailable_tracker import unavailable_tracker as soap_netgear
 	
 poll_methods = {
     'default': ssh_autodetect,
@@ -49,6 +54,7 @@ poll_methods = {
 	'aimesh_json' : ssh_aimesh_json,
     'unifi-http': http_unifi,
     'orbi-http': http_orbi,
+    'netgear-soap': soap_netgear,
     'omada-http': http_omada,
     'fritzbox': fritzbox,
     'dummy': fake_tracker,
