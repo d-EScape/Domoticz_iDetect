@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect multifunctional presence detection" author="ESCape" version="2.1" externallink="https://github.com/d-EScape/Domoticz_iDetect">
+<plugin key="idetect" name="iDetect multifunctional presence detection" author="ESCape" version="2.2" externallink="https://github.com/d-EScape/Domoticz_iDetect">
 	<description>
 		<h2>Presence detection by router, ping or other trackers</h2><br/>
 		<h3>Authentication settings</h3>
@@ -214,7 +214,7 @@ class BasePlugin:
 		
 		#setup debugging if enabled in settings
 		if Parameters["Mode5"]=="True":
-			Domoticz.Debugging(2)
+			Domoticz.Debugging(62)
 			self.debug=True
 		else:
 			self.debug=False

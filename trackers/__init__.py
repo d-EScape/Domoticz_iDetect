@@ -53,8 +53,8 @@ poll_methods = {
     'unifiusg-arp': ssh_unifi_usg_arp,
 	'aimesh_json' : ssh_aimesh_json,
     'unifi-http': http_unifi,
-    'orbi-http': http_orbi,
-    'netgear-soap': soap_netgear,
+    'orbi-http': http_orbi,							#obsolete
+    'netgear-soap': soap_netgear,					#prefered for all netgear routers supporting soap, including Orbi
     'omada-http': http_omada,
     'fritzbox': fritzbox,
     'dummy': fake_tracker,
