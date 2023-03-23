@@ -17,6 +17,7 @@ class tracker():
 		self.last_update = datetime.now()
 		self.error_state = False
 		self.is_ready = False
+		self.stop = False
 		self.poll_timer = None
 		self.interpreter_callback = None
 		self.error_count = 0
@@ -51,10 +52,12 @@ class tracker():
 			self.poll_present_tag_ids()
 		else:
 			Domoticz.Log(self.tracker_ip + ' Not (yet) ready for polling')
-		self.poll_timer = threading.Timer(self.poll_interval, self.timer_clockwork)
-		self.poll_timer.start()
+		if not self.stop:
+			self.poll_timer = threading.Timer(self.poll_interval, self.timer_clockwork)
+			self.poll_timer.start()
 		
 	def stop_now(self):
+		self.stop = True
 		self.is_ready = False
 		Domoticz.Debug("{} main tracker stopping".format(self.tracker_ip))
 		if not self.poll_timer is None:
