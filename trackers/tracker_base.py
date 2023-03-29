@@ -5,13 +5,13 @@ from time import sleep
 from datetime import datetime, timedelta
 
 class tracker():
-	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
-		self.tracker_ip = tracker_ip
-		self.tracker_port = tracker_port
-		self.tracker_user = tracker_user
-		self.tracker_password = tracker_password
-		self.tracker_keyfile = tracker_keyfile
-		self.poll_interval = poll_interval
+	def __init__(self, *args, **kwargs):
+		self.tracker_ip = kwargs.get('tracker_ip')
+		self.tracker_port = kwargs.get('tracker_port')
+		self.tracker_user = kwargs.get('tracker_user')
+		self.tracker_password = kwargs.get('tracker_password')
+		self.tracker_keyfile = kwargs.get('tracker_keyfile')
+		self.poll_interval = kwargs.get('poll_interval')
 		self.tag_type = 'mac_address'
 		self.found_tag_ids = []
 		self.last_update = datetime.now()
@@ -24,8 +24,7 @@ class tracker():
 		self.poll_thread = None
 		self.poll_timer = threading.Timer(self.poll_interval, self.timer_clockwork)
 		self.poll_timer.start()
-#		Domoticz.Status('Tracker activated:' + tracker_ip + ', user: ' + tracker_user + ', type: ' + str(self.__class__.__qualname__) + ' and poll interval: ' + str(poll_interval))
-		Domoticz.Status('Starting tracker:{}, user:{}, class:{} and poll interval:{}'.format(tracker_ip,tracker_user,self.__class__.__qualname__,poll_interval))
+		Domoticz.Status('Starting address:{}, port:{}, user:{}, keyfile:{}, class:{} and poll interval:{}'.format(self.tracker_ip, self.tracker_port, self.tracker_user, self.tracker_keyfile, self.__class__.__qualname__, self.poll_interval))
 			
 	def heartbeat_handler(self):
 		# don't need heartbeat when using threading timers
@@ -52,6 +51,7 @@ class tracker():
 			self.poll_present_tag_ids()
 		else:
 			Domoticz.Log(self.tracker_ip + ' Not (yet) ready for polling')
+			Domoticz.Debug('Using address:{}, port:{}, user:{}, keyfile:{}, class:{} and poll interval:{}'.format(self.tracker_ip, self.tracker_port, self.tracker_user, self.tracker_keyfile, self.__class__.__qualname__, self.poll_interval))
 		if not self.stop:
 			self.poll_timer = threading.Timer(self.poll_interval, self.timer_clockwork)
 			self.poll_timer.start()

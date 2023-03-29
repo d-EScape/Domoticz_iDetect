@@ -9,11 +9,9 @@ from fritzconnection.lib.fritzwlan import FritzWLAN
 from time import sleep
 
 class fritzbox(tracker):
-	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
-		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.busy = False
-		self.tracker_ip = tracker_ip
-		self.tracker_password = tracker_password
 		self.wlans = []
 		self.prepare_for_polling()
 		

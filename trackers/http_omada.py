@@ -11,12 +11,12 @@ from urllib.parse import urlparse
 import socket
 
 class http_omada(tracker):
-	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
+	def __init__(self, *args, **kwargs):
 		# Update default port
-		if not tracker_port:
+		if self.tracker_port is None:
 			self.tracker_port = 8443
 
-		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
+		super().__init__(*args, **kwargs)
 		self.baseurl = 'https://{}:{}'.format(self.tracker_ip, self.tracker_port)
 		self.site = 'default'
 		self.verify_ssl = False

@@ -12,13 +12,13 @@ except ImportError:
 	NOPARAMIKO = True
 
 class ssh_tracker(tracker):
-	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
-		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.trackerscript = ''
 		self.sshbin = 'ssh'
 		self.connected = False
 		self.my_transport = None
-		if tracker_port is None:
+		if self.tracker_port is None:
 			self.tracker_port = 22
 
 		Domoticz.Debug(self.tracker_ip + ' Tracker is of the ssh kind')
@@ -27,6 +27,9 @@ class ssh_tracker(tracker):
 		else:
 			self.client = paramiko.SSHClient()
 			self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+			
+	def logger(self,message):
+		Domoticz.Log(message)
 
 	def poll_present_tag_ids(self):
 		Domoticz.Debug(self.tracker_ip + ' Start poll and return results to ' + str(self.receiver_callback))

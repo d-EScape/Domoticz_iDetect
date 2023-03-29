@@ -5,8 +5,8 @@ import NonExistingStuff as NotGonnaWork
 from trackers.tracker_base import tracker
 
 class test_error_tracker(tracker):
-	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
-		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.prepare_for_polling()
 		Domoticz.Log(self.tracker_ip + ' Just testing an import error.')
 		

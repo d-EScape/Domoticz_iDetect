@@ -292,7 +292,7 @@ class BasePlugin:
 			if data_helper.is_ip_address(clean_tag_id):
 				Domoticz.Debug('Will use ping tracker to monitor presence for: ' + clean_tag_id)
 				if not 'local pinger' in self.active_trackers:
-					self.active_trackers['local pinger']=poll_methods['ping']('local pinger', '0', 'irrelevant', 'irrelevant', 'irrelevant', 30)
+					self.active_trackers['local pinger']=poll_methods['ping'](tracker_ip='local pinger', poll_interval=30)
 					self.active_trackers['local pinger'].register_list_interpreter(self.onDataReceive)
 				self.active_trackers['local pinger'].register_tag(clean_tag_id, tag_interval)
 			units_in_use.append(self.tags_to_monitor[clean_tag_id].domoticz_unit)
@@ -313,9 +313,10 @@ class BasePlugin:
 		Domoticz.Debug('Tracker configuration:' + str(Parameters["Address"]))
 		trackerips = Parameters["Address"].strip()
 		for tracker in trackerips.split(','):
-			try:
+			if '#' in tracker:
 				my_tracker, my_options = tracker.split('#', 1)
-			except:
+			else:
+				my_tracker = tracker
 				my_options = ''
 			Domoticz.Debug('Configuring tracker:' + my_tracker)
 			Domoticz.Debug('options:' + my_options)
@@ -346,11 +347,11 @@ class BasePlugin:
 			else:
 				if 'ssh' in optiondict:
 					my_type = 'prefab'
-					self.active_trackers[my_tracker]=poll_methods[my_type](my_host, my_port, my_user, my_password, my_keyfile, my_interval)
+					self.active_trackers[my_tracker]=poll_methods[my_type](tracker_ip=my_host, tracker_port=my_port, tracker_user=my_user, tracker_password=my_password, tracker_keyfile=my_keyfile, poll_interval=my_interval)
 					self.active_trackers[my_tracker].trackerscript = optiondict['ssh']
 					self.active_trackers[my_tracker].is_ready = True
 				else:
-					self.active_trackers[my_tracker]=poll_methods[my_type](my_host, my_port, my_user, my_password, my_keyfile, my_interval)
+					self.active_trackers[my_tracker]=poll_methods[my_type](tracker_ip=my_host, tracker_port=my_port, tracker_user=my_user, tracker_password=my_password, tracker_keyfile=my_keyfile, poll_interval=my_interval)
 				self.active_trackers[my_tracker].register_list_interpreter(self.onDataReceive)
 			Domoticz.Debug('Tracker config:{}, custom host:{}, port:{}, user:{}, type:{} and options:{}'.format(my_tracker,my_host,my_port,my_user,my_type,data_helper.hide_password_in_list(optiondict)))
 			Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))

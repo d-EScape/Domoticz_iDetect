@@ -5,9 +5,9 @@ import os
 import sys
 
 class ping_tracker(tracker):
-	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
-		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
-		self.default_interval = poll_interval
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.default_interval = kwargs.get('poll_interval')
 		self.tag_type = 'ip_address'
 		self.prepare_for_polling()
 		self.ping_timer = {}

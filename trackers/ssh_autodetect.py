@@ -3,8 +3,8 @@ from trackers.ssh_tracker import ssh_tracker
 import helpers.tracker_cli_helper as tracker_cli_helper
 
 class ssh_autodetect(ssh_tracker):
-	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
-		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.prepare_for_polling()
 		self.command_support = {}
 		Domoticz.Debug(self.tracker_ip + ' tracker will autodetect ssh cli')
