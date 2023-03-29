@@ -40,6 +40,13 @@ try:
 except ModuleNotFoundError:
 	Domoticz.Debug("Required modules for netgear-soap tracker are not installed")
 	from trackers.unavailable_tracker import unavailable_tracker as soap_netgear
+try:
+	from trackers.test_error_tracker import test_error_tracker
+except ModuleNotFoundError:
+	Domoticz.Debug("Required modules for test_error_tracker tracker are not installed")
+	from trackers.unavailable_tracker import unavailable_tracker as test_error_tracker	
+	
+	
 	
 poll_methods = {
     'default': ssh_autodetect,
@@ -58,5 +65,6 @@ poll_methods = {
     'omada-http': http_omada,
     'fritzbox': fritzbox,
     'dummy': fake_tracker,
+    'missing': test_error_tracker,
     'ping': ping_tracker
 }

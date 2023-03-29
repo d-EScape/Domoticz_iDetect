@@ -238,7 +238,7 @@ class BasePlugin:
 			except subprocess.CalledProcessError as err:
 				Domoticz.Debug("Trying to determine OS user raised an error (error: " + str(err.returncode) + "):" + str(err.output))
 
-		#get tracker user name and optional keyfile location for authentication
+		#get tracker user name and optiondict keyfile location for authentication
 		Domoticz.Debug('Parsing user and optional keyfile from:' + str(Parameters["Username"]))
 		try:
 			self.trackeruser, self.keyfile = Parameters["Username"].split("#")
@@ -283,10 +283,10 @@ class BasePlugin:
 				clean_tag_id = tag_id.strip().upper()
 			except:
 				Domoticz.Error("Invalid device/tag_id setting: " + str(tag_config))		
-			optional = data_helper.options_from_string(tag_options)
-			tag_interval=data_helper.custom_or_default(optional, 'interval', self.pollinterval)
-			tag_grace=data_helper.custom_or_default(optional, 'grace', self.graceoffline)
-			tag_ignore=data_helper.custom_or_default(optional, 'ignore', old_style_ignore)
+			optiondict = data_helper.options_from_string(tag_options)
+			tag_interval=data_helper.custom_or_default(optiondict, 'interval', self.pollinterval)
+			tag_grace=data_helper.custom_or_default(optiondict, 'grace', self.graceoffline)
+			tag_ignore=data_helper.custom_or_default(optiondict, 'ignore', old_style_ignore)
 			
 			self.tags_to_monitor[clean_tag_id]=tag_device(clean_tag_id, clean_name, tag_ignore, tag_grace)
 			if data_helper.is_ip_address(clean_tag_id):
@@ -314,43 +314,46 @@ class BasePlugin:
 		trackerips = Parameters["Address"].strip()
 		for tracker in trackerips.split(','):
 			try:
-				tracker, my_options = tracker.split('#', 1)
+				my_tracker, my_options = tracker.split('#', 1)
 			except:
 				my_options = ''
-			Domoticz.Debug('tracker:' + tracker)
+			Domoticz.Debug('Configuring tracker:' + my_tracker)
 			Domoticz.Debug('options:' + my_options)
+			if my_tracker in self.active_trackers:
+				Domoticz.Error('Tracker ' + my_tracker + ' configured twice. Check your configuration.')
+				continue
 			#First get parameters configured using the old style
-			if any(e in tracker for e in '=@:') or (my_options != '' and not '=' in my_options):
-				Domoticz.Error('WARNING! Tracker uses depricated configuration syntax but will work ... for now (see manual): ' + tracker)	
-			my_user=data_helper.get_config_part(tracker, before='@', default=self.trackeruser)
-			my_address=data_helper.get_config_part(tracker, after='@', mandatory=True, default='Configuration ERROR!')
-			my_port=data_helper.get_config_part(tracker, after=':', default=False)
-			my_type=data_helper.get_config_part(tracker, after='=', default='default')
-			optional = data_helper.options_from_string(my_options)
-			if 'configuration errors' in optional:
-				Domoticz.Error(my_address + ' SYNTAX ERROR in configuration: ' + my_options)
+			if any(e in my_tracker for e in '=@:') or (my_options != '' and not '=' in my_options):
+				Domoticz.Error('WARNING! Tracker uses depricated/invalid configuration syntax. See readme on github for correct options.' + tracker)
+				continue
+			optiondict = data_helper.options_from_string(my_options)
+			if 'configuration errors' in optiondict:
+				Domoticz.Error(my_tracker + ' SYNTAX ERROR in configuration: ' + my_options)
 				Domoticz.Error('Check documentation on https://github.com/d-EScape/Domoticz_iDetect for correct syntax (it might have changed)')
-			my_interval=data_helper.custom_or_default(optional, 'interval', self.pollinterval)
-			#Then get parameters configured using the new style (overwriting existing old style)
-			my_user=data_helper.custom_or_default(optional, 'user', my_user)
-			my_port=data_helper.custom_or_default(optional, 'port', my_port)
-			my_type=data_helper.custom_or_default(optional, 'type', my_type)
-			my_password=data_helper.custom_or_default(optional, 'password', self.trackerpass)
-			my_keyfile=data_helper.custom_or_default(optional, 'keyfile', self.keyfile)
-			if 'disabled' in optional and optional['disabled'] == True:
-				Domoticz.Status(my_address + ' WARNING Tracker is disabled in configuration:')
+			my_interval=data_helper.custom_or_default(optiondict, 'interval', self.pollinterval)
+			my_user=data_helper.custom_or_default(optiondict, 'user', self.trackeruser)
+			my_host=data_helper.custom_or_default(optiondict, 'host', my_tracker)
+			my_port=data_helper.custom_or_default(optiondict, 'port', None)
+			my_type=data_helper.custom_or_default(optiondict, 'type', 'default')
+			my_password=data_helper.custom_or_default(optiondict, 'password', self.trackerpass)
+			my_keyfile=data_helper.custom_or_default(optiondict, 'keyfile', self.keyfile)
+			if poll_methods[my_type].__name__ == "unavailable_tracker":
+				Domoticz.Error('Tracker type is not available. Check if all required python modules for tracker type "' + my_type + '" are installed.')
+				continue
+			Domoticz.Debug('loaded module is:' + poll_methods[my_type].__name__ + " for type:" + my_type)
+			if 'disabled' in optiondict and optiondict['disabled'] == True:
+				Domoticz.Status(my_tracker + ' WARNING Tracker is disabled in configuration:')
 			else:
-				if 'ssh' in optional:
+				if 'ssh' in optiondict:
 					my_type = 'prefab'
-					self.active_trackers[my_address]=poll_methods[my_type](my_address, my_port, my_user, my_password, my_keyfile, my_interval)
-					self.active_trackers[my_address].trackerscript = optional['ssh']
-					self.active_trackers[my_address].is_ready = True
+					self.active_trackers[my_tracker]=poll_methods[my_type](my_host, my_port, my_user, my_password, my_keyfile, my_interval)
+					self.active_trackers[my_tracker].trackerscript = optiondict['ssh']
+					self.active_trackers[my_tracker].is_ready = True
 				else:
-					self.active_trackers[my_address]=poll_methods[my_type](my_address, my_port, my_user, my_password, my_keyfile, my_interval)
-				self.active_trackers[my_address].register_list_interpreter(self.onDataReceive)
-				Domoticz.Debug('Tracker config:{}, custom port:{}, user:{}, type:{} and options:{}'.format(my_address,my_port,my_user,my_type,data_helper.hide_password_in_list(optional)))
-		Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
-		Domoticz.Debug("Plugin initialization done.")
+					self.active_trackers[my_tracker]=poll_methods[my_type](my_host, my_port, my_user, my_password, my_keyfile, my_interval)
+				self.active_trackers[my_tracker].register_list_interpreter(self.onDataReceive)
+			Domoticz.Debug('Tracker config:{}, custom host:{}, port:{}, user:{}, type:{} and options:{}'.format(my_tracker,my_host,my_port,my_user,my_type,data_helper.hide_password_in_list(optiondict)))
+			Domoticz.Debug('Trackers initialized as:' + str(self.active_trackers))
 		self.plugin_ready = True
 		Domoticz.Heartbeat(10)
 			

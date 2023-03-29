@@ -8,5 +8,5 @@ from trackers.tracker_base import tracker
 class unavailable_tracker(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
-		Domoticz.Error(self.tracker_ip + ' The trackertype is not supported until you install the required python modules')
+		Domoticz.Debug(self.tracker_ip + ' This is a substitude for the actual tracker module that could not be loaded because required python modules are missing')
 	

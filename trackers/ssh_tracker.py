@@ -18,7 +18,7 @@ class ssh_tracker(tracker):
 		self.sshbin = 'ssh'
 		self.connected = False
 		self.my_transport = None
-		if tracker_port is False:
+		if tracker_port is None:
 			self.tracker_port = 22
 
 		Domoticz.Debug(self.tracker_ip + ' Tracker is of the ssh kind')

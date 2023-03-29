@@ -14,7 +14,7 @@ import requests
 class soap_netgear(tracker):
 	def __init__(self, tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval):
 		super().__init__(tracker_ip, tracker_port, tracker_user, tracker_password, tracker_keyfile, poll_interval)
-		if tracker_port is False:
+		if tracker_port is None:
 			self.tracker_port = 443
 		self.prepare_for_polling()
 		
