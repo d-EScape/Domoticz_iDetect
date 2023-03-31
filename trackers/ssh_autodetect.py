@@ -10,6 +10,10 @@ class ssh_autodetect(ssh_tracker):
 		Domoticz.Debug(self.tracker_ip + ' tracker will autodetect ssh cli')
 
 	def prepare_for_polling(self):
+		if not self.connected:
+			if not self.ssh_connect():
+				self.is_ready = False
+				return
 		build_script = ''
 		self.command_support = self.find_tracker_command()
 		if self.command_support is None:
@@ -35,6 +39,7 @@ class ssh_autodetect(ssh_tracker):
 			return
 		self.trackerscript = tracker_cli_helper.wrap_command(build_script)
 		Domoticz.Debug(self.tracker_ip + ' Prepared to poll using: ' + self.trackerscript)
+		Domoticz.Status(self.tracker_ip + ' Tracker initialized')
 		self.is_ready = True
 
 	def find_tracker_command(self):

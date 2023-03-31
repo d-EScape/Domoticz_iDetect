@@ -5,11 +5,7 @@ from trackers.tracker_base import tracker
 import helpers.data_helper as data_helper
 from datetime import datetime, timedelta
 from time import sleep
-try:
-	import paramiko
-	NOPARAMIKO = False
-except ImportError:
-	NOPARAMIKO = True
+import paramiko
 
 class ssh_tracker(tracker):
 	def __init__(self, *args, **kwargs):
@@ -22,11 +18,9 @@ class ssh_tracker(tracker):
 			self.tracker_port = 22
 
 		Domoticz.Debug(self.tracker_ip + ' Tracker is of the ssh kind')
-		if NOPARAMIKO:
-			Domoticz.Error('Missing paramiko module required for ssh. Install it using: sudo pip3 install paramiko')
-		else:
-			self.client = paramiko.SSHClient()
-			self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		self.client = paramiko.SSHClient()
+		self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		self.ssh_connect()
 			
 	def logger(self,message):
 		Domoticz.Log(message)
@@ -48,9 +42,6 @@ class ssh_tracker(tracker):
 		return True
 
 	def ssh_connect(self):
-		if NOPARAMIKO:
-			Domoticz.Error('Missing paramiko module requred for ssh. Install it using: sudo pip3 install paramiko')
-			return
 		Domoticz.Debug(self.tracker_ip + ' ====> SSH start connect on port ' + str(self.tracker_port))
 		if self.tracker_password == '':
 			if self.tracker_keyfile != '':
@@ -92,14 +83,11 @@ class ssh_tracker(tracker):
 		return True
 
 	def getfromssh(self, tracker_cli, alltimeout=5, sshtimeout=3):
-		if NOPARAMIKO:
-			return False, ''
 		Domoticz.Debug(self.tracker_ip + " ====> SSH Fetching data using: " + tracker_cli)
 		starttime=datetime.now()
 		if not self.connected:
 			Domoticz.Debug(self.tracker_ip + ' ====> SSH not connected ... connecting')
 			self.ssh_connect()
-		if not self.connected:
 			return False, ''
 		try:
 			stdin, stdout, stderr = self.client.exec_command(tracker_cli, timeout=5)
@@ -112,6 +100,7 @@ class ssh_tracker(tracker):
 			Domoticz.Debug(self.tracker_ip + ' ====> SSH returned (decoded):' + ssh_output)
 		except Exception as e:
 			Domoticz.Error(self.tracker_ip + ' ====> SSH failed with exception: ' + str(e))
+			Domoticz.Debug(self.tracker_ip + " ====> SSH tried for " + str((datetime.now()-starttime).microseconds//1000) + " milliseconds.")
 			try:
 				self.client.close()
 				Domoticz.Status(self.tracker_ip + ' ====> SSH resetting connection')

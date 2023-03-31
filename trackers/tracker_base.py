@@ -15,12 +15,14 @@ class tracker():
 		self.tag_type = 'mac_address'
 		self.found_tag_ids = []
 		self.last_update = datetime.now()
+		self.last_init = datetime.now()
 		self.error_state = False
 		self.is_ready = False
 		self.stop = False
 		self.poll_timer = None
 		self.interpreter_callback = None
 		self.error_count = 0
+		self.initcount = 6
 		self.poll_thread = None
 		self.poll_timer = threading.Timer(self.poll_interval, self.timer_clockwork)
 		self.poll_timer.start()
@@ -32,6 +34,12 @@ class tracker():
 		if self.poll_timer is None:
 			Domoticz.Debug(self.tracker_ip + ' Does not seem to have a poll timer')
 		return
+		
+	def prepare_for_polling(self):
+		#Should be implemented in specfic tracker
+		Domoticz.Debug(self.tracker_ip + ' Has no prepare_for_pollling method.')
+		self.is_ready = True
+		return True
 			
 	def poll_present_tag_ids(self):
 		#placeholder in case subclass misses this method
@@ -50,11 +58,20 @@ class tracker():
 			Domoticz.Debug(self.tracker_ip + ' Timed poll starting like clockwork')
 			self.poll_present_tag_ids()
 		else:
-			Domoticz.Log(self.tracker_ip + ' Not (yet) ready for polling')
-			Domoticz.Debug('Using address:{}, port:{}, user:{}, keyfile:{}, class:{} and poll interval:{}'.format(self.tracker_ip, self.tracker_port, self.tracker_user, self.tracker_keyfile, self.__class__.__qualname__, self.poll_interval))
+			Domoticz.Log(self.tracker_ip + ' Not (yet) fully initialized for polling')
+			Domoticz.Debug('Tracker address:{}, port:{}, user:{}, keyfile:{}, class:{} and poll interval:{}'.format(self.tracker_ip, self.tracker_port, self.tracker_user, self.tracker_keyfile, self.__class__.__qualname__, self.poll_interval))
+			retrywait = ( 1 + ( 6 - self.initcount)) * 15
+			if self.initcount > 0 and (datetime.now() - self.last_init).seconds > retrywait:
+				Domoticz.Status("{} tracker initialization (still) not completed after waiting at least {} seconds. Retrying {} more times".format(self.tracker_ip, retrywait, self.initcount))
+				self.last_init = datetime.now()
+				self.initcount = self.initcount - 1
+				self.prepare_for_polling()
 		if not self.stop:
+			Domoticz.Debug('{} keep the clockwork ticking'.format(self.tracker_ip))
 			self.poll_timer = threading.Timer(self.poll_interval, self.timer_clockwork)
 			self.poll_timer.start()
+		else:
+			Domoticz.Debug('{} clockwork stopped'.format(self.tracker_ip))
 		
 	def stop_now(self):
 		self.stop = True

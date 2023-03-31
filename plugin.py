@@ -3,7 +3,7 @@
 # Author: ESCape
 #
 """
-<plugin key="idetect" name="iDetect multifunctional presence detection" author="ESCape" version="2.3" externallink="https://github.com/d-EScape/Domoticz_iDetect">
+<plugin key="idetect" name="iDetect multifunctional presence detection" author="ESCape" version="2.4" externallink="https://github.com/d-EScape/Domoticz_iDetect">
 	<description>
 		<h2>Presence detection by router, ping or other trackers</h2><br/>
 		<h3>Authentication settings</h3>
@@ -318,6 +318,8 @@ class BasePlugin:
 			else:
 				my_tracker = tracker
 				my_options = ''
+			my_tracker=my_tracker.strip()
+			my_options=my_options.strip()
 			Domoticz.Debug('Configuring tracker:' + my_tracker)
 			Domoticz.Debug('options:' + my_options)
 			if my_tracker in self.active_trackers:
@@ -325,7 +327,7 @@ class BasePlugin:
 				continue
 			#First get parameters configured using the old style
 			if any(e in my_tracker for e in '=@:') or (my_options != '' and not '=' in my_options):
-				Domoticz.Error('WARNING! Tracker uses depricated/invalid configuration syntax. See readme on github for correct options.' + tracker)
+				Domoticz.Error('WARNING! Tracker uses depricated/invalid configuration syntax. See readme on github for correct options.' + my_tracker)
 				continue
 			optiondict = data_helper.options_from_string(my_options)
 			if 'configuration errors' in optiondict:
