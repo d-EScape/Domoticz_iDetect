@@ -1,6 +1,6 @@
 # Tracker for Ubiquiti Unifi Controller
 
-import Domoticz
+import DomoticzEx
 import requests
 import json
 from trackers.tracker_base import tracker
@@ -30,16 +30,16 @@ class http_unifi(tracker):
 				data="json={}"
 			)
 		except Exception as e:
-			Domoticz.Error(self.tracker_ip + ' Polling error: ' + str(e))
+			DomoticzEx.Error(self.tracker_ip + ' Polling error: ' + str(e))
 			self.close_connection()
 
 		if (response.status_code == 401):
 			self.close_connection()
-			Domoticz.Error(self.tracker_ip + ' Invalid login, or login has expired')
+			DomoticzEx.Error(self.tracker_ip + ' Invalid login, or login has expired')
 			return
 
 		raw_data = response.text
-		Domoticz.Debug(self.tracker_ip + ' Returned: ' + raw_data)
+		DomoticzEx.Debug(self.tracker_ip + ' Returned: ' + raw_data)
 
 		self.receiver_callback(raw_data)
 
@@ -58,10 +58,10 @@ class http_unifi(tracker):
 		)
 
 		if response.status_code == 400:
-			Domoticz.Error(self.tracker_ip + 'Failed to log in to Unifi API')
+			DomoticzEx.Error(self.tracker_ip + 'Failed to log in to Unifi API')
 			return False
 
-		Domoticz.Status(self.baseurl + ' Initialized as Ubiquiti Unifi Controller API')
+		DomoticzEx.Status(self.baseurl + ' Initialized as Ubiquiti Unifi Controller API')
 		return True
 
 	def disconnect(self):
@@ -74,9 +74,9 @@ class http_unifi(tracker):
 		try:
 			self.http_session.close()
 			self.http_session = None
-			Domoticz.Debug(self.tracker_ip + ' HTTP session closed')
+			DomoticzEx.Debug(self.tracker_ip + ' HTTP session closed')
 		except Exception as e:
-			Domoticz.Debug(self.tracker_ip + ' Close session exception: ' + str(e))
+			DomoticzEx.Debug(self.tracker_ip + ' Close session exception: ' + str(e))
 		return
 	   
 	def prepare_for_polling(self):

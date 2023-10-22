@@ -1,4 +1,4 @@
-import Domoticz
+import DomoticzEx
 from trackers.ssh_tracker import ssh_tracker
 import helpers.tracker_cli_helper as tracker_cli_helper
 import helpers.data_helper as data_helper
@@ -23,7 +23,7 @@ def clean_tag_id_list_arp(raw_data, tag_type):
 		elif tag_type == 'ip_address':
 			match_this = re.compile(ARP_PATTERN_IP)
 		else:
-			Domoticz.Error('Undefined tag_type for data: ' + raw_data)
+			DomoticzEx.Error('Undefined tag_type for data: ' + raw_data)
 			return []
 		raw_list = match_this.findall(raw_data)
 	clean_list = [data_helper.clean_tag(x) for x in raw_list]
@@ -35,17 +35,17 @@ class ssh_routeros_arp(ssh_tracker):
 		self.prepare_for_polling()
 
 	def prepare_for_polling(self):
-		Domoticz.Debug('routeros-arp prepare_for_polling')
+		DomoticzEx.Debug('routeros-arp prepare_for_polling')
 		self.trackerscript = "ip arp print"
 		self.is_ready = True
 
 	def receiver_callback(self, raw_data):
-		Domoticz.Debug('routeros-arp receiver_callback called')
-		#Domoticz.Debug(raw_data + ' raw_data')
-		#Domoticz.Debug(self.tag_type + ' self.tag_type')
+		DomoticzEx.Debug('routeros-arp receiver_callback called')
+		#DomoticzEx.Debug(raw_data + ' raw_data')
+		#DomoticzEx.Debug(self.tag_type + ' self.tag_type')
 		self.found_tag_ids = clean_tag_id_list_arp(raw_data, self.tag_type)
 		if not self.interpreter_callback is None:
 			self.interpreter_callback(self)
 		else:
-			Domoticz.Debug(self.tracker_ip + ' No interpreter_callback registered. Ignoring new data.')
+			DomoticzEx.Debug(self.tracker_ip + ' No interpreter_callback registered. Ignoring new data.')
 

@@ -1,4 +1,4 @@
-import Domoticz
+import DomoticzEx
 from trackers.tracker_base import tracker
 import threading
 import os
@@ -15,7 +15,7 @@ class ping_tracker(tracker):
 	def register_tag(self, new_tag, tag_interval=None):
 		if tag_interval is None:
 			tag_interval = self.default_interval
-		Domoticz.Debug(self.tracker_ip + ' Starting ping timer for ' + new_tag)
+		DomoticzEx.Debug(self.tracker_ip + ' Starting ping timer for ' + new_tag)
 		self.ping_timer[new_tag] = threading.Timer(tag_interval, self.ping_clockwork, [new_tag, tag_interval])
 		self.ping_timer[new_tag].start()
 		
@@ -43,13 +43,13 @@ class ping_tracker(tracker):
 	
 	def can_be_pinged(self, tagged_host):
 		error_level = os.system(self.ping_command + tagged_host + ' > /dev/null')
-		Domoticz.Debug('Tried pinging tag: ' + tagged_host + ' --> error_level (0 means online): ' + str(error_level))
+		DomoticzEx.Debug('Tried pinging tag: ' + tagged_host + ' --> error_level (0 means online): ' + str(error_level))
 		return not error_level
 		
 	def stop_now(self):
 		self.is_ready = False
 		for tmr in self.ping_timer:
-			Domoticz.Debug(self.tracker_ip + ' Stopping ping timer for ' + tmr)
+			DomoticzEx.Debug(self.tracker_ip + ' Stopping ping timer for ' + tmr)
 			self.ping_timer[tmr].cancel()
 		for tmr in self.ping_timer:
 			self.ping_timer[tmr].join()

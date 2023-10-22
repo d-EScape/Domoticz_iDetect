@@ -3,7 +3,7 @@
 
 # Tested with Omada 4.4.8 on Linux. Does not work with Omada 3.x.x which is end-of-life.
 
-import Domoticz
+import DomoticzEx
 import requests
 import json
 from trackers.tracker_base import tracker
@@ -36,13 +36,13 @@ class http_omada(tracker):
 		while (current_page - 1) * current_page_size <= total_rows:
 			query_string = {"token": self.token, "currentPage": current_page, "currentPageSize": current_page_size, "filters.active": "true"}
 			res = self.session.get(self.baseurl + clients_path, verify=self.verify_ssl, params=query_string)
-			Domoticz.Debug(self.tracker_ip + ' URL: ' + res.request.url)
+			DomoticzEx.Debug(self.tracker_ip + ' URL: ' + res.request.url)
 			results = res.json()['result']
 			total_rows = results['totalRows']
 			for data in results['data']:
 				mac_string = mac_string + data['mac'].replace('-', ':') + ','
 			current_page += 1
-		Domoticz.Debug(self.tracker_ip + ' Returned: ' + mac_string)
+		DomoticzEx.Debug(self.tracker_ip + ' Returned: ' + mac_string)
 		self.receiver_callback(mac_string)
 
 	def connect(self):
@@ -55,13 +55,13 @@ class http_omada(tracker):
 						   data=json.dumps(login_data),
 						   verify=self.verify_ssl,
 						   headers=headers)
-		# Domoticz.Debug(self.tracker_ip + ': ' +  res.text)
+		# DomoticzEx.Debug(self.tracker_ip + ': ' +  res.text)
 		if res.json().get('msg') != 'Log in successfully.':
-			Domoticz.Error(self.tracker_ip + 'Failed to log in to Omada API')
+			DomoticzEx.Error(self.tracker_ip + 'Failed to log in to Omada API')
 			return False
 		# Get token
 		self.token = res.json()['result']['token']
-		Domoticz.Status(self.baseurl + ' Initialized as TP-link Omada Controller API')
+		DomoticzEx.Status(self.baseurl + ' Initialized as TP-link Omada Controller API')
 		return True
 
 	def disconnect(self):
@@ -71,9 +71,9 @@ class http_omada(tracker):
 		try:
 			self.session.close()
 			self.session = None
-			Domoticz.Debug(self.tracker_ip + ' HTTP session closed')
+			DomoticzEx.Debug(self.tracker_ip + ' HTTP session closed')
 		except Exception as e:
-			Domoticz.Debug(self.tracker_ip + ' Close session exception: ' + str(e))
+			DomoticzEx.Debug(self.tracker_ip + ' Close session exception: ' + str(e))
 		return
 	   
 	def prepare_for_polling(self):

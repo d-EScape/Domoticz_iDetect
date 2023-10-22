@@ -6,7 +6,7 @@
 # !!! The plugin assumes a ssl connection and defaults to port 443. You can change the port, but it has to be ssl (like 5555 on some routers).
 # !!! If you set 'autodetect' as hostname then the plugin will leave the search for a netgear router up to the pynetgear module
 
-import Domoticz
+import DomoticzEx
 from trackers.tracker_base import tracker
 from pynetgear import Netgear
 import requests
@@ -22,9 +22,9 @@ class soap_netgear(tracker):
 		try:
 			raw_data = self.netgear.get_attached_devices()
 		except Exception as e:
-			Domoticz.Error(e)
+			DomoticzEx.Error(e)
 			raw_data = []
-		Domoticz.Debug(self.tracker_ip + ' Returned: ' + str(raw_data))
+		DomoticzEx.Debug(self.tracker_ip + ' Returned: ' + str(raw_data))
 		found=[]
 		for device in raw_data:
 			found.append(device.mac)		
@@ -33,10 +33,10 @@ class soap_netgear(tracker):
 	def prepare_for_polling(self):
 		if self.tracker_ip.lower() == "autodetect":
 			self.netgear = Netgear(password=self.tracker_password, user=self.tracker_user)
-			Domoticz.Log('Will search for netgear router with soap interface...')
+			DomoticzEx.Log('Will search for netgear router with soap interface...')
 		else:
 			self.netgear = Netgear(password=self.tracker_password, host=self.tracker_ip, ssl=True, port=self.tracker_port, user=self.tracker_user)
-			Domoticz.Log(self.tracker_ip + ' configured for soap access')
+			DomoticzEx.Log(self.tracker_ip + ' configured for soap access')
 		self.is_ready = True
 		
 	def stop_now(self):

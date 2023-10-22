@@ -62,7 +62,7 @@ def clean_tag_id_list(raw_data, tag_type):
 		elif tag_type == 'ip_address':
 			match_this = re.compile(PATTERN_IP)
 		else:
-			Domoticz.Error('Undefined tag_type for data: ' + raw_data)
+			DomoticzEx.Error('Undefined tag_type for data: ' + raw_data)
 			return []
 		raw_list = match_this.findall(raw_data)
 	clean_list = [clean_tag(x) for x in raw_list]

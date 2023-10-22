@@ -1,4 +1,4 @@
-import Domoticz
+import DomoticzEx
 from trackers.ssh_tracker import ssh_tracker
 import helpers.tracker_cli_helper as tracker_cli_helper
 
@@ -6,7 +6,7 @@ class ssh_autodetect_generic(ssh_tracker):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.prepare_for_polling()
-		Domoticz.Debug(self.tracker_ip + ' tracker will autodetect ssh cli')
+		DomoticzEx.Debug(self.tracker_ip + ' tracker will autodetect ssh cli')
 		
 	def prepare_for_polling(self):
 		build_script = ''
@@ -19,11 +19,11 @@ class ssh_autodetect_generic(ssh_tracker):
 				build_script = tracker_cli_helper.get_tracker_cli(generic_command, self.command_support[generic_command])
 				break
 		if build_script == '':
-			Domoticz.Debug(self.tracker_ip + ' FAILED: No suitable polling command found on this tracker!')
+			DomoticzEx.Debug(self.tracker_ip + ' FAILED: No suitable polling command found on this tracker!')
 			self.is_ready = False
 			return
 		self.trackerscript = build_script
-		Domoticz.Debug(self.tracker_ip + ' Prepared to poll using: ' + self.trackerscript)
+		DomoticzEx.Debug(self.tracker_ip + ' Prepared to poll using: ' + self.trackerscript)
 		self.is_ready = True
 
 	def find_tracker_command(self):
@@ -38,8 +38,8 @@ class ssh_autodetect_generic(ssh_tracker):
 					if cmd in tracker_cli_helper.generic_methods:
 						full_cmd = this_line.split(" ")[-1]
 						command_path[cmd] = full_cmd
-			Domoticz.Debug("Available generic commands on " + self.tracker_ip + ":" + str(command_path))
+			DomoticzEx.Debug("Available generic commands on " + self.tracker_ip + ":" + str(command_path))
 			return command_path
 		else:
-			Domoticz.Debug(self.tracker_ip + " Could not retreive available generic commands")
+			DomoticzEx.Debug(self.tracker_ip + " Could not retreive available generic commands")
 			return None

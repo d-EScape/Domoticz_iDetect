@@ -20,14 +20,14 @@
 #
 # Last but not least: add your tracker class to __init__.py in the trackers directory, otherwise it will not be known to the plugin.
 
-import Domoticz
+import DomoticzEx
 from trackers.tracker_base import tracker
 
 class fake_tracker(tracker):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.prepare_for_polling()
-		Domoticz.Debug(self.tracker_ip + ' Is a FAKE tracker, will do a fake poll and return fake results')
+		DomoticzEx.Debug(self.tracker_ip + ' Is a FAKE tracker, will do a fake poll and return fake results')
 		
 	def poll_present_tag_ids(self):
 		# Add code to retrieve data from a tracker and return the (raw string of formatted list) data to

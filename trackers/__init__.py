@@ -1,70 +1,55 @@
-import Domoticz
+import DomoticzEx
 
-from trackers.ping_tracker import ping_tracker
-from trackers.fake_tracker import fake_tracker
-try:
-	from trackers.ssh_tracker import ssh_tracker
-	from trackers.ssh_autodetect import ssh_autodetect
-	from trackers.ssh_autodetect_generic import ssh_autodetect_generic
-	from trackers.ssh_brctl import ssh_brctl
-	from trackers.ssh_routeros import ssh_routeros
-	from trackers.ssh_routeros_capsman import ssh_routeros_capsman
-	from trackers.ssh_routeros_arp import ssh_routeros_arp
-	from trackers.ssh_zyxel_arp import ssh_zyxel_arp
-	from trackers.ssh_unifi_usg_arp import ssh_unifi_usg_arp
-	from trackers.ssh_aimesh_json import ssh_aimesh_json
-except ModuleNotFoundError:
-	Domoticz.Debug("Required modules for ssh tracker are not installed")
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_tracker
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_autodetect
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_autodetect_generic
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_brctl
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_routeros
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_routeros_capsman
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_routeros_arp
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_zyxel_arp
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_zyxel_arp
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_unifi_usg_arp
-	from trackers.unavailable_tracker import unavailable_tracker as ssh_aimesh_json
-	
-from trackers.http_orbi import http_orbi
-from trackers.http_unifi import http_unifi
-from trackers.http_omada import http_omada
-try:
-	from trackers.fritzbox import fritzbox
-except ModuleNotFoundError:
-	Domoticz.Debug("Required modules for fritzbox tracker are not installed")
-	from trackers.unavailable_tracker import unavailable_tracker as fritzbox
-try:
-	from trackers.soap_netgear import soap_netgear
-except ModuleNotFoundError:
-	Domoticz.Debug("Required modules for netgear-soap tracker are not installed")
-	from trackers.unavailable_tracker import unavailable_tracker as soap_netgear
-try:
-	from trackers.test_error_tracker import test_error_tracker
-except ModuleNotFoundError:
-	Domoticz.Debug("Required modules for test_error_tracker tracker are not installed")
-	from trackers.unavailable_tracker import unavailable_tracker as test_error_tracker	
-	
-	
-	
-poll_methods = {
-    'default': ssh_autodetect,
-    'forcegeneric': ssh_autodetect_generic,
-    'prefab': ssh_tracker,
-    'brctl': ssh_brctl,
-    'routeros': ssh_routeros,
-    'routeros-arp': ssh_routeros_arp,
-	'routeros-capsman': ssh_routeros_capsman,
-    'zyxel-arp': ssh_zyxel_arp,
-    'unifiusg-arp': ssh_unifi_usg_arp,
-	'aimesh_json' : ssh_aimesh_json,
-    'unifi-http': http_unifi,
-    'orbi-http': http_orbi,							#obsolete
-    'netgear-soap': soap_netgear,					#prefered for all netgear routers supporting soap, including Orbi
-    'omada-http': http_omada,
-    'fritzbox': fritzbox,
-    'dummy': fake_tracker,
-    'missing': test_error_tracker,
-    'ping': ping_tracker
-}
+def get_tracker(typename="default", **kwargs):
+	if kwargs.get('debug',False):
+		DomoticzEx.Debugging(62)
+		DomoticzEx.Debug("All arguments (except password) for tracker init:" + str({x: kwargs[x] for x in kwargs if x not in ['tracker_password']}))
+		DomoticzEx.Debug("Type requested:" + str(typename))
+#	try:
+	if typename == "default":
+		from trackers.ssh_autodetect import ssh_autodetect as tracker
+	elif typename == "forcegeneric":
+		from trackers.ssh_autodetect_generic import ssh_autodetect_generic as tracker
+	elif typename == "prefab":
+		from trackers.ssh_tracker import ssh_tracker as tracker
+	elif typename == "brctl":
+		from trackers.ssh_brctl import ssh_brctl as tracker
+	elif typename == "routeros":
+		from trackers.ssh_routeros import ssh_routeros as tracker
+	elif typename == "routeros-arp":
+		from trackers.ssh_routeros_arp import ssh_routeros_arp as tracker
+	elif typename == "routeros-capsman":
+		from trackers.ssh_routeros_capsman import ssh_routeros_capsman as tracker			
+	elif typename == "zyxel-arp":
+		from trackers.ssh_zyxel_arp import ssh_zyxel_arp as tracker
+	elif typename == "unifiusg-arp":
+		from trackers.ssh_unifi_usg_arp import ssh_unifi_usg_arp as tracker
+	elif typename == "aimesh_json":
+		from trackers.ssh_aimesh_json import ssh_aimesh_json as tracker
+	elif typename == "unifi-http":
+		from trackers.http_unifi import http_unifi as tracker
+	elif typename == "orbi-http":
+		#Obsolete... use netgear-soap instead (when possible).
+		DomoticzEx.Status("Consider using the netgear-soap tracker type instead of the older orbi-http")
+		from trackers.http_orbi import http_orbi as tracker
+	elif typename == "netgear-soap":
+		from trackers.soap_netgear import soap_netgear as tracker			
+	elif typename == "omada-http":
+		from trackers.http_omada import http_omada as tracker
+	elif typename == "fritzbox":
+		from trackers.fritzbox import fritzbox as tracker
+	elif typename == "dummy":
+		from trackers.fake_tracker import fake_tracker as tracker			
+	elif typename == "ping":
+		from trackers.ping_tracker import ping_tracker as tracker
+	else:
+		DomoticzEx.Error("There is no tracker type named:" + typename)
+		from trackers.unavailable_tracker import unavailable_tracker as tracker	
+# 	except ModuleNotFoundError as moderr: 
+# 		DomoticzEx.Error("Required modules for " + typename + " tracker are not installed:" + str(moderr))
+# 		from trackers.unavailable_tracker import unavailable_tracker as tracker
+# 	except Exception as err:
+# 		DomoticzEx.Error("Error while trying to import tracker module:" + str(err))
+# 		from trackers.unavailable_tracker import unavailable_tracker as tracker
+	DomoticzEx.Debug("Trackertype '" + typename +"' got router module: " + str(tracker.__name__))			
+	return tracker(**kwargs)

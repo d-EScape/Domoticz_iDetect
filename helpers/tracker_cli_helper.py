@@ -59,7 +59,7 @@ type arp
 echo 0
 """
 
-import Domoticz
+import DomoticzEx
 
 def get_try_available_commands_cli():
 	functional_part = try_available_commands
