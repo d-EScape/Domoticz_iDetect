@@ -405,10 +405,11 @@ class BasePlugin:
 		else:
 			DomoticzEx.Status('Skip this hearbeat ... system is still preparing')
 
-	def onCommand(self, Unit, Command, Level, Hue):
+	def onCommand(self, DeviceID, Unit, Command, Level, Hue):
 		#only allow the override switch to be operated from Domoticz ui and only if overrides are enabled
 		#other switches cannot be operated from the Domoticz ui. They are controlled by the plugin
-		if Unit == OVERRIDE_ID:
+		DomoticzEx.Log("onCommand called for Device " + str(DeviceID) + " Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
+		if DeviceID == OVERRIDE_ID:
 			if str(Command)=='On':
 				if self.override.allow:
 					self.override.set_active()
@@ -448,9 +449,9 @@ def onHeartbeat():
 	global _plugin
 	_plugin.onHeartbeat()
 
-def onCommand(Unit, Command, Level, Hue):
+def onCommand(DeviceID, Unit, Command, Level, Hue):
 	global _plugin
-	_plugin.onCommand(Unit, Command, Level, Hue)
+	_plugin.onCommand(DeviceID, Unit, Command, Level, Hue)
 
 # Generic helper functions
 def DumpConfigToLog():
