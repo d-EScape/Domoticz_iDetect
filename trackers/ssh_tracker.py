@@ -5,7 +5,7 @@ from trackers.tracker_base import tracker
 import helpers.data_helper as data_helper
 from datetime import datetime, timedelta
 from time import sleep
-import paramiko
+from pssh.clients.ssh import SSHClient
 	
 class ssh_tracker(tracker):
 	def __init__(self, *args, **kwargs):
@@ -14,8 +14,7 @@ class ssh_tracker(tracker):
 		self.connected = False
 		if self.tracker_port is None:
 			self.tracker_port = 22
-		self.client = paramiko.SSHClient()
-		self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
 		DomoticzEx.Debug(self.tracker_ip + ' Tracker is of the ssh kind')
 		self.ssh_connect()
 			
@@ -43,39 +42,28 @@ class ssh_tracker(tracker):
 		if self.tracker_password == '':
 			if self.tracker_keyfile != '':
 				my_key_file = self.tracker_keyfile
-				rsa_key = None
+				DomoticzEx.Debug(self.tracker_ip + ' ====> SSH using key: ' + my_key_file)
 				try:
-					rsa_key=paramiko.RSAKey.from_private_key_file(my_key_file)
-				except Exception as e:
-					DomoticzEx.Error(self.tracker_ip + ' ====> SSH Could not get RSA from private key. Exception: ' + str(e))
-				DomoticzEx.Debug(self.tracker_ip + ' ====> SSH using key: ' + str(my_key_file))
-				try:
-					self.client.connect(self.tracker_ip, port=self.tracker_port, username=self.tracker_user, pkey=rsa_key, timeout=5)
+					self.client = SSHClient(self.tracker_ip, port=self.tracker_port, user=self.tracker_user, pkey=self.tracker_keyfile, timeout=5)
 				except Exception as e:
 					DomoticzEx.Error(self.tracker_ip + ' SSH Could not connect (using custom key file). Exception: ' + str(e))
 					self.connected = False
 					return
 			else:
 				try:
-					self.client.connect(self.tracker_ip, port=self.tracker_port, username=self.tracker_user, timeout=5)
+					self.client = SSHClient(self.tracker_ip, port=self.tracker_port, user=self.tracker_user, pkey='~/.ssh/id_rsa', timeout=5)
 				except Exception as e:
 					DomoticzEx.Error(self.tracker_ip + ' SSH Could not connect (with os key). Exception: ' + str(e))
 					self.connected = False
 					return False
 		else:
 			try:
-				self.client.connect(self.tracker_ip, port=self.tracker_port, username=self.tracker_user, password=self.tracker_password, look_for_keys=False, timeout=5)
+				self.client = SSHClient(self.tracker_ip, port=self.tracker_port, user=self.tracker_user, password=self.tracker_password, timeout=5)
 			except Exception as e:
 				DomoticzEx.Error(self.tracker_ip + ' ====> SSH Could not connect (using password). Exception: ' + str(e))
 				self.connected = False
 				return False
-		try:
-			self.my_transport = self.client.get_transport()
-			DomoticzEx.Status(self.tracker_ip + ' ====> SSH connection established')
-		except:
-			DomoticzEx.Error(self.tracker_ip + ' ====> SSH connection failed (no transport)')
-			self.connected = False
-			return False
+		DomoticzEx.Status(self.tracker_ip + ' ====> SSH connection established')
 		self.connected = True
 		return True
 
@@ -88,17 +76,13 @@ class ssh_tracker(tracker):
 		if not self.connected:
 			return False, ''
 		try:
-			stdin, stdout, stderr = self.client.exec_command(tracker_cli, timeout=5)
-			ssh_output = stdout.read().decode("utf-8")
-			ssh_error = stderr.read().decode("utf-8")
-			if ssh_error != '':
-				DomoticzEx.Error(self.tracker_ip + ' ====> SSH returned error:' + ssh_error)
+			output = self.client.run_command(tracker_cli, read_timeout=5)
+			ssh_output='\n'.join(map(str,output.stdout))
 			DomoticzEx.Debug(self.tracker_ip + ' ====> SSH returned (decoded):' + ssh_output)
 		except Exception as e:
 			DomoticzEx.Error(self.tracker_ip + ' ====> SSH failed with exception: ' + str(e))
-			DomoticzEx.Debug(self.tracker_ip + " ====> SSH tried for " + str((datetime.now()-starttime).microseconds//1000) + " milliseconds.")
 			try:
-				self.client.close()
+				self.disconnect()
 				DomoticzEx.Status(self.tracker_ip + ' ====> SSH resetting connection')
 			except:
 				DomoticzEx.Debug(self.tracker_ip + ' ====> SSH connection reset failed')
@@ -111,13 +95,9 @@ class ssh_tracker(tracker):
 	def stop_now(self):
 		self.is_ready = False
 		try:
-			self.client.close()
-			DomoticzEx.Debug(self.tracker_ip + ' ====> SSH client closed')
+			self.client.disconnect()
+			DomoticzEx.Debug(self.tracker_ip + ' ====> SSH client disconnected')
 		except:
-			DomoticzEx.Debug(self.tracker_ip + ' ====> Unable to close SSH session')
-		if self.my_transport is None:
-			DomoticzEx.Debug(self.tracker_ip + ' ====> SSH no transport')
-		else:
-			DomoticzEx.Debug(self.tracker_ip + ' ====> SSH wait for transport to close')
-			self.my_transport.join()
+			DomoticzEx.Debug(self.tracker_ip + ' ====> Unable to disconnect SSH session')
+		self.client=None
 		super().stop_now()
