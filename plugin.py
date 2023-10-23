@@ -195,7 +195,7 @@ def update_domoticz_status(device, status, unit=1):
 	if Devices[device].Units[unit].nValue != nvalue or Devices[device].Units[unit].sValue != svalue:
 		Devices[device].Units[unit].nValue = nvalue
 		Devices[device].Units[unit].sValue = svalue
-		Devices[device].Units[unit].Update()
+		Devices[device].Units[unit].Update(Log=True)
 		DomoticzEx.Debug("Changed state of " + Devices[device].Units[unit].Name + " to " + svalue)
 	return True
 
