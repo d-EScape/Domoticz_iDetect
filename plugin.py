@@ -173,7 +173,6 @@ def handle_unused_unit(device, unit=1, remove_it=False):
 		Devices[device].Units[unit].Delete()
 	else:
 		DomoticzEx.Status("Tag  " + device + " no longer monitored --> marked as timed-out")
-#		Devices[device].Units[1].Update(nValue=0, sValue='Off', TimedOut=1)
 		Devices[device].TimedOut=1
 		
 def get_domoticz_status(device, unit=1):
@@ -312,9 +311,7 @@ class BasePlugin:
 		obsolete_units = []
 		for d in Devices:
 			if not d in units_in_use and not d in [ANYONEHOME_ID, OVERRIDE_ID]:
-				handle_unused_unit(d)
-# 		for obs_unit in obsolete_units:
-# 			handle_unused_unit(obs_unit, self.deleteobsolete)
+				handle_unused_unit(d, self.deleteobsolete)
 		
 		#parse one or multiple tracker ips from settings
 		#Note: the poweroption, username and password are set globally for all trackers!
