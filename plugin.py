@@ -174,7 +174,7 @@ def handle_unused_unit(device, unit=1, remove_it=False):
 	else:
 		DomoticzEx.Status("Tag  " + device + " no longer monitored --> marked as timed-out")
 #		Devices[device].Units[1].Update(nValue=0, sValue='Off', TimedOut=1)
-		Devices[device].Units[unit].TimedOut=1
+		Devices[device].TimedOut=1
 		
 def get_domoticz_status(device, unit=1):
 	if Devices[device].Units[unit].nValue == True:
