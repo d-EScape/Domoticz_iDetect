@@ -151,8 +151,8 @@ def get_or_create_unit(friendly_name, unit=1, icon='idetect-unithome', name_pref
 			icon_id=Images[icon].ID
 		else:
 			icon_id=None
-	except:
-		DomoticzEx.Error("Could not find or use the required icon file (" + icon_file[icon] + ") for " + icon + ". Plugin installation seems incomplete.")
+	except Exception as err:
+		DomoticzEx.Error("Could not find or use the required icon file (" + icon_file[icon] + ") for " + icon + ". Plugin installation might be incomplete. Error: " + str(err))
 		icon_id = None
 	new_unit = unit
 	try:

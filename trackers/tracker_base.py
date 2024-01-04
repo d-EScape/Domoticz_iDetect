@@ -49,7 +49,7 @@ class tracker():
 				
 	def timer_clockwork(self):
 		if self.is_ready:
-			DomoticzEx.Debug(self.tracker_ip + ' Timed poll starting like clockwork')
+			DomoticzEx.Debug(self.tracker_ip + ' Timed poll starting like clockwork. '  + str(threading.active_count()) + " threads active (including me)")
 			self.poll_present_tag_ids()
 		else:
 			DomoticzEx.Log(self.tracker_ip + ' Not (yet) ready for polling')
